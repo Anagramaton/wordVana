@@ -1,8 +1,6 @@
 /* ============================================================
    Strongly differentiated themes + clear playable vs empty cells
    High-contrast dropdown menu options per theme for readability.
-   Visual hints for allowed cells when a token is selected.
-   Mobile-friendly spacing to enlarge tiles without shrinking the board.
    Board auto-fits via --cell-size (set by app.js).
    ============================================================ */
 
@@ -52,11 +50,10 @@
   --slot-bg-1: rgba(255,255,255,.05);
   --slot-bg-2: rgba(255,255,255,.03);
 
-  /* Accents + hints */
+  /* Accents */
   --accent: #00c2ff;
   --accent-2: #68e3ff;
   --glow: 0 0 0 2px rgba(0,194,255,.55), 0 0 24px rgba(0,194,255,.35);
-  --hint-mix: 22%; /* amount of accent blended into hint backgrounds */
 
   /* Frame shadow */
   --frame-shadow: 0 30px 80px rgba(0,0,0,.55);
@@ -225,7 +222,7 @@
   --menu-border: #6a6a6a;
 }
 
-/* High Contrast (Accessibility) – WCAG-friendly black/white/yellow */
+/* High Contrast (Accessibility) – max separation, real HC palette */
 [data-theme="high-contrast"] {
   --bg: #000000;
   --bg-2: #000000;
@@ -379,18 +376,6 @@
 }
 
 /* ============================================================
-   Mobile-friendly spacing to enlarge tiles without shrinking board
-   ============================================================ */
-@media (max-width: 600px), (max-height: 750px) {
-  :root {
-    --gap: 2px;
-    --outer-margin: 8px;
-    --char-scale: 0.68;   /* visually larger letters */
-    --token-scale: 0.60;
-  }
-}
-
-/* ============================================================
    Global layout and components
    ============================================================ */
 
@@ -407,7 +392,7 @@ body {
     radial-gradient(1200px 600px at 12% 0%, var(--bg-2) 0%, var(--bg) 60%, var(--bg) 100%);
 }
 
-/* Controls overlay (no blur to avoid dropdown contrast issues) */
+/* Controls overlay (remove blur to avoid dropdown contrast issues) */
 .theme-select-overlay {
   position: fixed;
   top: var(--outer-margin);
@@ -445,7 +430,7 @@ body {
 .game {
   position: relative;
   width: 100vw;
-  height: 100dvh; /* dynamic viewport height for mobile */
+  height: 100dvh; /* use dynamic viewport height on mobile */
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -531,18 +516,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Hints: highlight allowed drop targets for selected token */
-.cell.hint {
-  /* Slightly blend accent into the fillable background to create a clear visual guide */
-  background: linear-gradient(
-    150deg,
-    color-mix(in srgb, var(--fillable-bg-1) calc(100% - var(--hint-mix)), var(--accent) var(--hint-mix)),
-    color-mix(in srgb, var(--fillable-bg-2) calc(100% - var(--hint-mix)), var(--accent) var(--hint-mix))
-  );
-  box-shadow: inset 0 0 0 2px var(--accent), 0 8px 18px color-mix(in srgb, var(--accent) 25%, black);
-  border-color: color-mix(in srgb, var(--fillable-border) 50%, var(--accent) 50%);
-}
-
 /* Borders hold outside slots */
 .border {
   display: grid;
@@ -618,4 +591,11 @@ body {
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(-6px);
+}
+
+#confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2000;
 }

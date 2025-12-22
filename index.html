@@ -2,6 +2,7 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
+    <!-- Use the full safe area on iOS and get the correct visual viewport on mobile -->
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>Word Puzzle</title>
     <link rel="stylesheet" href="./styles.css" />
@@ -10,7 +11,7 @@
     <!-- Controls (fixed overlay) -->
     <div class="theme-select-overlay">
       <label for="themeSelect">Theme</label>
-      <select id="themeSelect">
+      <select id="themeSelect" aria-label="Theme">
         <option value="dark" selected>Dark</option>
         <option value="light">Light</option>
         <option value="colorblind">Colorblind</option>
@@ -22,13 +23,14 @@
       </select>
 
       <label for="difficultySelect" style="margin-left:12px;">Difficulty</label>
-      <select id="difficultySelect">
+      <select id="difficultySelect" aria-label="Difficulty">
         <option value="easy">Easy</option>
         <option value="balanced" selected>Balanced</option>
         <option value="hard">Hard</option>
       </select>
     </div>
 
+    <!-- Game area -->
     <div class="game">
       <div id="boardWrapper" class="board-wrapper">
         <div id="frame" class="frame">
@@ -52,10 +54,13 @@
       </div>
     </div>
 
+    <!-- Animation layer (does not affect layout) -->
     <canvas id="confetti"></canvas>
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <!-- Toast notifications -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <!-- App logic -->
     <script type="module" src="./app.js"></script>
   </body>
 </html>
