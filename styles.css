@@ -56,42 +56,53 @@
   --menu-bg: #0f1628;
   --menu-fg: #e6f0ff;
   --menu-border: #2a3d5e;
+
+  /* Multi-color path highlight (defaults; themes override) */
+  --path-0: #68e3ff; /* cyan */
+  --path-1: #a78bfa; /* purple */
+  --path-2: #f472b6; /* pink */
+  --path-3: #60a5fa; /* blue */
+  --path-4: #22d3ee; /* light cyan */
 }
 
 /* ============================================================
-   Theme palettes (high differentiation for playable vs empty)
-   Also provide menu palettes per theme for readable dropdown.
+   Theme palettes – broadened hue ranges per theme
    ============================================================ */
 
-/* Neon Night (Dark) */
+/* Neon Night (Dark): cool blues + magenta accents */
 [data-theme="dark"] {
   --bg: #071021;
   --bg-2: #0c162e;
   --text: #e6f0ff;
   --muted: #8aa2c0;
 
+  /* Playable: deep blue -> electric blue */
   --fillable-bg-1: #0f2b6b;
-  --fillable-bg-2: #153b8f;
+  --fillable-bg-2: #1b3f9c;
   --fillable-border: #4a89ff;
   --fillable-shadow: 0 10px 24px rgba(19, 59, 143, .45);
 
+  /* Empty: midnight navy with subtle violet dots */
   --empty-bg-1: #06122e;
   --empty-bg-2: #081738;
   --empty-border: #213a73;
   --empty-shadow: 0 8px 18px rgba(8, 23, 56, .35);
-  --empty-pattern: rgba(106, 142, 255, .15);
+  --empty-pattern: rgba(167,139,250,.14);
 
-  --token-bg-1: #0a1e3f;
-  --token-bg-2: #08203a;
-  --token-border: #2856a4;
+  /* Tokens: indigo -> magenta for variety */
+  --token-bg-1: #1a2358;
+  --token-bg-2: #3a1d49;
+  --token-border: #6c5bd9;
   --token-text: #e6f0ff;
 
+  /* Slots: cool blue glass */
   --slot-border: #2a4f8a;
   --slot-bg-1: rgba(74,137,255,.12);
-  --slot-bg-2: rgba(74,137,255,.06);
+  --slot-bg-2: rgba(0,224,255,.08);
 
+  /* Accents: cyan + pink */
   --accent: #00e0ff;
-  --accent-2: #86f3ff;
+  --accent-2: #ff6bd6;
   --glow: 0 0 0 2px rgba(0,224,255,.55), 0 0 24px rgba(0,224,255,.35);
 
   --frame-shadow: 0 36px 90px rgba(0,0,0,.6);
@@ -99,17 +110,24 @@
   --menu-bg: #0f1c35;
   --menu-fg: #e6f0ff;
   --menu-border: #2a4f8a;
+
+  /* Path palette */
+  --path-0: #4a89ff;
+  --path-1: #00e0ff;
+  --path-2: #ff6bd6;
+  --path-3: #86f3ff;
+  --path-4: #7aa8ff;
 }
 
-/* Porcelain Paper (Light) */
+/* Porcelain Paper (Light): soft multi-pastels */
 [data-theme="light"] {
   --bg: #f6f9ff;
   --bg-2: #e9f0fb;
   --text: #101423;
   --muted: #4b5570;
 
-  --fillable-bg-1: #dfe9ff;
-  --fillable-bg-2: #cfe0ff;
+  --fillable-bg-1: #dae7ff;  /* pale blue */
+  --fillable-bg-2: #e7d6ff;  /* pale lavender */
   --fillable-border: #8fb3ff;
   --fillable-shadow: 0 8px 24px rgba(11, 108, 255, .15);
 
@@ -117,7 +135,7 @@
   --empty-bg-2: #eef4ff;
   --empty-border: #cbd6ee;
   --empty-shadow: 0 6px 18px rgba(15, 23, 42, .12);
-  --empty-pattern: rgba(11,108,255,.12);
+  --empty-pattern: rgba(247,114,182,.12); /* soft pink dots */
 
   --token-bg-1: #ffffff;
   --token-bg-2: #f1f6ff;
@@ -126,10 +144,10 @@
 
   --slot-border: #cdd8ee;
   --slot-bg-1: rgba(11,108,255,.14);
-  --slot-bg-2: rgba(11,108,255,.07);
+  --slot-bg-2: rgba(167,139,250,.10);
 
   --accent: #0b6cff;
-  --accent-2: #71a6ff;
+  --accent-2: #ff7ab6; /* pink secondary */
   --glow: 0 0 0 2px rgba(11,108,255,.35), 0 0 24px rgba(11,108,255,.25);
 
   --frame-shadow: 0 24px 60px rgba(15, 23, 42, .15);
@@ -137,16 +155,21 @@
   --menu-bg: #ffffff;
   --menu-fg: #101423;
   --menu-border: #cbd6ee;
+
+  --path-0: #0b6cff;
+  --path-1: #71a6ff;
+  --path-2: #ff7ab6;
+  --path-3: #7cd3ff;
+  --path-4: #8fe3c0; /* mint */
 }
 
-/* Tritanopia-friendly (Colorblind) – blue vs amber */
+/* Tritanopia-friendly (Colorblind): blue vs amber */
 [data-theme="colorblind"] {
   --bg: #0f172a;
   --bg-2: #0c1426;
   --text: #f8fbff;
   --muted: #94a3b8;
 
-  /* Strong blue for playable; muted navy for empty; amber accents/patterns */
   --fillable-bg-1: #0f2a63;
   --fillable-bg-2: #193d8a;
   --fillable-border: #3b78ff;
@@ -156,7 +179,7 @@
   --empty-bg-2: #0c234b;
   --empty-border: #243c6f;
   --empty-shadow: 0 8px 20px rgba(12, 35, 75, .35);
-  --empty-pattern: rgba(255,183,3,.20); /* amber dots for non-playable */
+  --empty-pattern: rgba(255,183,3,.20); /* amber dots */
 
   --token-bg-1: #142239;
   --token-bg-2: #0d1b32;
@@ -168,7 +191,7 @@
   --slot-bg-2: rgba(255,183,3,.10);
 
   --accent: #ffb703;  /* strong amber */
-  --accent-2: #ffd166;
+  --accent-2: #3b78ff; /* blue secondary */
   --glow: 0 0 0 2px rgba(255,183,3,.6), 0 0 26px rgba(255,183,3,.35);
 
   --frame-shadow: 0 28px 72px rgba(0,0,0,.55);
@@ -176,6 +199,12 @@
   --menu-bg: #0f1c35;
   --menu-fg: #f8fbff;
   --menu-border: #38558a;
+
+  --path-0: #3b78ff;
+  --path-1: #ffb703;
+  --path-2: #86a8ff;
+  --path-3: #ffd166;
+  --path-4: #2856a4;
 }
 
 /* Pure Mono (B/W) – ultra clear distinction */
@@ -214,16 +243,21 @@
   --menu-bg: #0f0f0f;
   --menu-fg: #ffffff;
   --menu-border: #6a6a6a;
+
+  --path-0: #ffffff;
+  --path-1: #bfbfbf;
+  --path-2: #ffffff;
+  --path-3: #8a8a8a;
+  --path-4: #ffffff;
 }
 
-/* High Contrast (Accessibility) – max separation, real HC palette */
+/* High Contrast (Accessibility) – maximum clarity */
 [data-theme="high-contrast"] {
   --bg: #000000;
   --bg-2: #000000;
-  --text: #ffffff;   /* main text white */
-  --muted: #fffb00;  /* labels yellow for visibility */
+  --text: #ffffff;
+  --muted: #fffb00;
 
-  /* Playable cells: black with WHITE border; Empty: black with YELLOW dashed border + pattern */
   --fillable-bg-1: #000000;
   --fillable-bg-2: #000000;
   --fillable-border: #ffffff;
@@ -245,7 +279,7 @@
   --slot-bg-2: rgba(255,251,0,.20);
 
   --accent: #00e5ff;
-  --accent-2: #7cf2ff;
+  --accent-2: #fffb00;
   --glow: 0 0 0 2px rgba(0,229,255,.6), 0 0 28px rgba(0,229,255,.45);
 
   --frame-shadow: none;
@@ -253,37 +287,47 @@
   --menu-bg: #000000;
   --menu-fg: #ffffff;
   --menu-border: #fffb00;
+
+  --path-0: #ffffff;
+  --path-1: #fffb00;
+  --path-2: #ffffff;
+  --path-3: #fffb00;
+  --path-4: #ffffff;
 }
 
-/* Desert Mirage – warm and sandy */
+/* Desert Mirage – oranges, yellows, reds */
 [data-theme="desert"] {
-  --bg: #2b1f14;
-  --bg-2: #3a2a1d;
+  --bg: #2b1f14;   /* dark umber */
+  --bg-2: #3a2a1d; /* warm brown */
   --text: #f7e1c3;
   --muted: #d5b89c;
 
-  --fillable-bg-1: #6b3f1c;
-  --fillable-bg-2: #874f22;
+  /* Playable: burnt orange -> golden amber */
+  --fillable-bg-1: #7a3c14;
+  --fillable-bg-2: #c2621b;
   --fillable-border: #ffb26a;
   --fillable-shadow: 0 10px 24px rgba(107, 63, 28, .45);
 
+  /* Empty: deep sand -> clay with warm pattern */
   --empty-bg-1: #3a2a1d;
   --empty-bg-2: #2e2319;
   --empty-border: #8a5b35;
   --empty-shadow: 0 8px 20px rgba(46, 35, 25, .35);
-  --empty-pattern: rgba(255,159,28,.24);
+  --empty-pattern: rgba(253,224,71,.22); /* yellow dots */
 
-  --token-bg-1: #5a3c22;
-  --token-bg-2: #4a331d;
+  /* Tokens: crimson -> coral for contrast */
+  --token-bg-1: #8a1e10;
+  --token-bg-2: #b43e2a;
   --token-border: #d98c3f;
   --token-text: #f7e1c3;
 
+  /* Slots: amber glass */
   --slot-border: #b57434;
   --slot-bg-1: rgba(255,159,28,.24);
-  --slot-bg-2: rgba(255,159,28,.12);
+  --slot-bg-2: rgba(253,224,71,.18);
 
-  --accent: #ff9f1c;
-  --accent-2: #ffd29b;
+  --accent: #ff9f1c;   /* orange */
+  --accent-2: #ef4444; /* red secondary */
   --glow: 0 0 0 2px rgba(255,159,28,.5), 0 0 28px rgba(255,159,28,.35);
 
   --frame-shadow: 0 26px 70px rgba(26, 18, 12, .65);
@@ -291,37 +335,47 @@
   --menu-bg: #3a2a1d;
   --menu-fg: #f7e1c3;
   --menu-border: #8a5b35;
+
+  --path-0: #f97316; /* orange */
+  --path-1: #fde047; /* yellow */
+  --path-2: #ef4444; /* red */
+  --path-3: #fb7185; /* coral */
+  --path-4: #f59e0b; /* amber */
 }
 
-/* Ice Cavern – crisp cool blues */
+/* Ice Cavern – blues, purples, pinks */
 [data-theme="ice"] {
-  --bg: #0b1020;
-  --bg-2: #0f172a;
+  --bg: #0b1020;   /* cold navy */
+  --bg-2: #0f172a; /* deep blue */
   --text: #e6f0ff;
   --muted: #b6c8e5;
 
+  /* Playable: arctic blue -> indigo */
   --fillable-bg-1: #143a74;
-  --fillable-bg-2: #1b4b92;
+  --fillable-bg-2: #2a2f92;
   --fillable-border: #8fd7ff;
   --fillable-shadow: 0 10px 26px rgba(27, 75, 146, .45);
 
+  /* Empty: glacier blue with pink-lilac pattern */
   --empty-bg-1: #0f223f;
   --empty-bg-2: #10294c;
   --empty-border: #2a4f8a;
   --empty-shadow: 0 8px 20px rgba(16, 41, 76, .35);
-  --empty-pattern: rgba(124,211,255,.24);
+  --empty-pattern: rgba(244,114,182,.22); /* pink dots */
 
-  --token-bg-1: #1b2a4e;
-  --token-bg-2: #162345;
-  --token-border: #7cd3ff;
+  /* Tokens: lilac -> ice pink */
+  --token-bg-1: #4c3aa1;
+  --token-bg-2: #7a3aa1;
+  --token-border: #b9ecff;
   --token-text: #e6f0ff;
 
+  /* Slots: cyan + lilac glass */
   --slot-border: #7cd3ff;
   --slot-bg-1: rgba(124,211,255,.24);
-  --slot-bg-2: rgba(124,211,255,.12);
+  --slot-bg-2: rgba(167,139,250,.16);
 
-  --accent: #7cd3ff;
-  --accent-2: #b9ecff;
+  --accent: #7cd3ff;   /* cyan */
+  --accent-2: #f472b6; /* pink secondary */
   --glow: 0 0 0 2px rgba(124,211,255,.55), 0 0 28px rgba(124,211,255,.35);
 
   --frame-shadow: 0 28px 72px rgba(14, 28, 56, .55);
@@ -329,37 +383,47 @@
   --menu-bg: #142239;
   --menu-fg: #e6f0ff;
   --menu-border: #2a4f8a;
+
+  --path-0: #7cd3ff; /* light blue */
+  --path-1: #a78bfa; /* purple */
+  --path-2: #f472b6; /* pink */
+  --path-3: #60a5fa; /* blue */
+  --path-4: #22d3ee; /* cyan */
 }
 
-/* Forest Canopy – lush greens */
+/* Forest Canopy – greens, yellows, orange */
 [data-theme="forest"] {
-  --bg: #0f2a1f;
-  --bg-2: #0b2017;
+  --bg: #0f2a1f;   /* deep forest */
+  --bg-2: #0b2017; /* pine */
   --text: #d8f3dc;
   --muted: #a3c9a8;
 
+  /* Playable: spruce green -> jade */
   --fillable-bg-1: #105f3d;
-  --fillable-bg-2: #167c50;
+  --fillable-bg-2: #1a8c5b;
   --fillable-border: #8fe3c0;
   --fillable-shadow: 0 10px 26px rgba(16, 95, 61, .45);
 
+  /* Empty: dark moss with amber pattern */
   --empty-bg-1: #0d2e23;
   --empty-bg-2: #0f382a;
   --empty-border: #287255;
   --empty-shadow: 0 8px 20px rgba(13, 46, 35, .35);
-  --empty-pattern: rgba(149,213,178,.24);
+  --empty-pattern: rgba(245,158,11,.22); /* amber dots */
 
-  --token-bg-1: #164532;
-  --token-bg-2: #133d2c;
+  /* Tokens: olive -> amber for contrast */
+  --token-bg-1: #2b5a3e;
+  --token-bg-2: #8a5b1c;
   --token-border: #95d5b2;
   --token-text: #d8f3dc;
 
+  /* Slots: mint + amber glass */
   --slot-border: #95d5b2;
   --slot-bg-1: rgba(149,213,178,.24);
-  --slot-bg-2: rgba(149,213,178,.12);
+  --slot-bg-2: rgba(245,158,11,.16);
 
-  --accent: #95d5b2;
-  --accent-2: #c9f7dd;
+  --accent: #95d5b2;   /* mint green */
+  --accent-2: #f59e0b; /* amber secondary */
   --glow: 0 0 0 2px rgba(149,213,178,.55), 0 0 28px rgba(149,213,178,.35);
 
   --frame-shadow: 0 28px 72px rgba(5, 25, 18, .55);
@@ -367,6 +431,12 @@
   --menu-bg: #133d2c;
   --menu-fg: #d8f3dc;
   --menu-border: #287255;
+
+  --path-0: #22c55e; /* green */
+  --path-1: #84cc16; /* yellow-green */
+  --path-2: #f59e0b; /* amber */
+  --path-3: #10b981; /* teal-green */
+  --path-4: #65a30d; /* olive */
 }
 
 /* ============================================================
@@ -511,6 +581,7 @@ body {
   text-shadow: var(--glyph-shadow);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: transform .12s ease, opacity .12s ease; /* for placement pop */
 }
 
 /* Borders hold outside slots */
@@ -681,3 +752,43 @@ body {
   box-shadow: var(--glow);
   outline: 2px solid var(--accent);
 }
+
+/* ============================================================
+   Rich multi-color path highlight system
+   ============================================================ */
+
+/* Allow .path-* to set the current color via --path-color */
+.cell.allowed { --path-color: var(--accent); }
+.cell.allowed.path-0 { --path-color: var(--path-0); }
+.cell.allowed.path-1 { --path-color: var(--path-1); }
+.cell.allowed.path-2 { --path-color: var(--path-2); }
+.cell.allowed.path-3 { --path-color: var(--path-3); }
+.cell.allowed.path-4 { --path-color: var(--path-4); }
+
+/* Allowed-drop preview styling using --path-color */
+.cell.allowed {
+  outline: 2px solid color-mix(in srgb, var(--path-color), transparent 40%);
+  outline-offset: -2px;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--path-color), transparent 55%),
+    0 0 22px color-mix(in srgb, var(--path-color), transparent 70%);
+  position: relative;
+}
+.cell.allowed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--slot-bg-1), transparent 60%),
+    color-mix(in srgb, var(--slot-bg-2), transparent 70%)
+  );
+  pointer-events: none;
+}
+
+/* Tiny "pop" when a character is placed (paired with app.js) */
+@keyframes char-pop {
+  0% { transform: scale(.86); opacity: .6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.cell .char.placed { animation: char-pop .12s ease; }

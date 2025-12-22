@@ -36,8 +36,8 @@ window.addEventListener('resize', resizeConfetti);
 
 // Size presets: adjust counts here in code (no UI)
 const SIZE_PRESETS = {
-  small:  { N: 8,  maxWordLen: 6,  wordCount: 8  },
-  medium: { N: 11, maxWordLen: 8, wordCount: 9 },
+  small:  { N: 8,  maxWordLen: 5,  wordCount: 7  },
+  medium: { N: 11, maxWordLen: 8, wordCount: 10 },
   large:  { N: 16, maxWordLen: 11, wordCount: 13 }
 };
 
@@ -319,6 +319,36 @@ function renderOutsideSlots(n) {
   }
 }
 
+/* Visual guidance: highlight legal destination cells for a token */
+function clearAllowedHighlights() {
+  if (!boardEl) return;
+  boardEl.querySelectorAll('.cell.allowed').forEach(el => el.classList.remove('allowed'));
+}
+
+function previewAllowedForToken(token) {
+  clearAllowedHighlights();
+  if (!token || token.placed) return;
+
+  const isRow = token.side === 'L' || token.side === 'R';
+  const fixedIdx = token.index;
+
+  if (isRow) {
+    const r = fixedIdx;
+    for (let c = 0; c < N; c++) {
+      if (gridRef[r][c] !== 1) continue;
+      const el = boardEl.querySelector(`.cell[data-coord="${r},${c}"]`);
+      el?.classList.add('allowed');
+    }
+  } else {
+    const c = fixedIdx;
+    for (let r = 0; r < N; r++) {
+      if (gridRef[r][c] !== 1) continue;
+      const el = boardEl.querySelector(`.cell[data-coord="${r},${c}"]`);
+      el?.classList.add('allowed');
+    }
+  }
+}
+
 /** Create tokens from slot assignment and place them into their slots */
 function renderTokensFromAssignment(letters, assignment) {
   tokens.clear();
@@ -338,10 +368,22 @@ function renderTokensFromAssignment(letters, assignment) {
 
     tokenEl.addEventListener('click', () => selectToken(cellKey));
 
+    // Hover preview (only if not already placed/selected)
+    tokenEl.addEventListener('mouseenter', () => {
+      const tok = tokens.get(cellKey);
+      if (tok && !tok.placed && selectedTokenId !== cellKey) previewAllowedForToken(tok);
+    });
+    tokenEl.addEventListener('mouseleave', () => {
+      const tok = tokens.get(cellKey);
+      // Keep highlights if it's the currently selected token
+      if (!tok || selectedTokenId === cellKey) return;
+      clearAllowedHighlights();
+    });
+
     const slotEl = slotEls.get(info.id);
     if (slotEl) {
-      slotEl.classList.remove('empty');
-      slotEl.classList.add('occupied');
+      slotEl.classList.remove('occupied');
+      slotEl.classList.add('empty');
       slotEl.appendChild(tokenEl);
     }
 
@@ -364,7 +406,12 @@ function selectToken(tokenId) {
   }
   selectedTokenId = tokenId;
   const t = tokens.get(tokenId);
-  if (t && !t.placed) t.el.classList.add('selected');
+  if (t && !t.placed) {
+    t.el.classList.add('selected');
+    previewAllowedForToken(t);
+  } else {
+    clearAllowedHighlights();
+  }
 }
 
 function onBoardCellClick(e) {
@@ -392,7 +439,10 @@ function onBoardCellClick(e) {
     tok.placed = false;
     tok.currentCellKey = null;
     tok.el.classList.remove('selected');
+
+    // If the user just freed a cell, reset selection and highlights
     selectedTokenId = null;
+    clearAllowedHighlights();
     return;
   }
 
@@ -413,6 +463,12 @@ function onBoardCellClick(e) {
   const charEl = cell.querySelector('.char');
   if (charEl) {
     charEl.textContent = tok.letter;
+    charEl.classList.remove('placed'); // restart animation if reusing the same cell
+    // force reflow to retrigger animation
+    // eslint-disable-next-line no-unused-expressions
+    charEl.offsetWidth;
+    charEl.classList.add('placed');
+
     cell.dataset.tokenId = tok.id;
     cell.setAttribute('aria-label', `Row ${r + 1}, Column ${c + 1}: ${tok.letter}`);
   }
@@ -427,6 +483,8 @@ function onBoardCellClick(e) {
   tok.currentCellKey = coord;
   tok.el.classList.remove('selected');
   selectedTokenId = null;
+
+  clearAllowedHighlights();
 
   if (allTokensPlaced()) {
     validateCompletion();
@@ -557,6 +615,19 @@ function scheduleFitToViewport() {
 }
 
 window.addEventListener('resize', scheduleFitToViewport);
+
+/* Optional: click empty space to clear selection/highlights */
+document.addEventListener('click', (evt) => {
+  const withinToken = evt.target.closest?.('.token');
+  const withinCell = evt.target.closest?.('.cell');
+  if (!withinToken && !withinCell) {
+    if (selectedTokenId && tokens.has(selectedTokenId)) {
+      tokens.get(selectedTokenId).el.classList.remove('selected');
+    }
+    selectedTokenId = null;
+    clearAllowedHighlights();
+  }
+});
 
 // Initial load
 newPuzzle();
