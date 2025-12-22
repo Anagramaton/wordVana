@@ -2,7 +2,6 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
-    <!-- Use the full safe area on iOS and get the correct visual viewport on mobile -->
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>WORDVANA</title>
     <link rel="stylesheet" href="./styles.css" />
@@ -21,7 +20,6 @@
         <option value="forest">FOREST</option>
       </select>
 
-      <!-- New: Board size -->
       <select id="sizeSelect" aria-label="Board size">
         <option value="small">SMALL (8×8)</option>
         <option value="medium">MEDIUM (11×11)</option>
@@ -35,37 +33,79 @@
       </select>
     </div>
 
+    <!-- Help button -->
+    <button id="howToPlayBtn" class="help-btn" aria-label="How to Play">?</button>
+
     <!-- Game area -->
     <div class="game">
       <div id="boardWrapper" class="board-wrapper">
         <div id="frame" class="frame">
-          <!-- Top border (N slots) -->
           <div id="topBorder" class="border top"></div>
-
-          <!-- Left border (N slots) -->
           <div id="leftBorder" class="border left"></div>
-
-          <!-- Board grid -->
           <div id="board" class="board">
             <div class="grid"></div>
           </div>
-
-          <!-- Right border (N slots) -->
           <div id="rightBorder" class="border right"></div>
-
-          <!-- Bottom border (N slots) -->
           <div id="bottomBorder" class="border bottom"></div>
         </div>
       </div>
     </div>
 
-    <!-- Animation layer (does not affect layout) -->
+    <!-- Animation layer -->
     <canvas id="confetti"></canvas>
 
-    <!-- Toast notifications -->
+    <!-- Toast -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <!-- App logic -->
+    <!-- How to Play Modal (plain-language copy) -->
+    <div id="howToPlayModal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="htpTitle" aria-describedby="htpBody">
+        <header class="modal-header">
+          <h2 id="htpTitle" tabindex="-1">How to Play</h2>
+          <button id="howToPlayClose" class="modal-close" aria-label="Close">×</button>
+        </header>
+        <div id="htpBody" class="modal-body">
+          <p><strong>Your goal:</strong> Fill every playable square with the right letters so the grid makes real, criss‑crossing words.</p>
+
+          <h3>Getting started</h3>
+          <ul>
+            <li>The letters sit around the outside of the board in little tiles.</li>
+            <li>Click a letter to pick it up, then click a square to put it down.</li>
+          </ul>
+
+          <h3>Where letters can go</h3>
+          <ul>
+            <li>Letters on the <strong>left or right</strong> edges can go anywhere along that same line <em>across</em>.</li>
+            <li>Letters on the <strong>top or bottom</strong> edges can go anywhere along that same line <em>down</em>.</li>
+            <li>Only the bold, solid‑border squares are playable. The faint, dashed ones are just empty space.</li>
+          </ul>
+
+          <h3>Changed your mind?</h3>
+          <ul>
+            <li>Click a filled square to send that letter back to where it started.</li>
+            <li>You can keep moving letters until everything fits.</li>
+          </ul>
+
+          <h3>When you’ve got it</h3>
+          <ul>
+            <li>The game stays quiet while you work.</li>
+            <li>When every playable square is filled <em>and</em> all letters are correct, game over.</li>
+          </ul>
+
+          <h3>Settings</h3>
+          <ul>
+            
+            <li><strong>Size:</strong> Pick a small, medium, or large board. This makes a new puzzle.</li>
+            <li><strong>Difficulty:</strong> Easier means placements feel more obvious; harder means they’re trickier. Changing this makes a new puzzle.</li>
+          </ul>
+
+
+
+          <p><em>Quick tip:</em> Press Esc to close this window, or click outside it.</p>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="./app.js"></script>
   </body>
 </html>

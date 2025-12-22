@@ -19,6 +19,11 @@ const sizeSelect = document.getElementById('sizeSelect');
 const confettiCanvas = document.getElementById('confetti');
 const ctx = confettiCanvas?.getContext('2d');
 
+/* Help modal elements */
+const helpBtn = document.getElementById('howToPlayBtn');
+const howToModal = document.getElementById('howToPlayModal');
+const howToClose = document.getElementById('howToPlayClose');
+
 let confettiParticles = [];
 let confettiRunning = false;
 
@@ -90,6 +95,38 @@ if (difficultySelect) {
   });
 }
 
+/* Help modal logic */
+function openHowToModal() {
+  if (!howToModal) return;
+  howToModal.classList.add('open');
+  howToModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  const title = howToModal.querySelector('#htpTitle');
+  title?.focus();
+  howToModal.addEventListener('click', backdropClose);
+  document.addEventListener('keydown', escClose);
+}
+
+function closeHowToModal() {
+  if (!howToModal) return;
+  howToModal.classList.remove('open');
+  howToModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  howToModal.removeEventListener('click', backdropClose);
+  document.removeEventListener('keydown', escClose);
+  helpBtn?.focus();
+}
+
+function backdropClose(e) {
+  if (e.target === howToModal) closeHowToModal();
+}
+function escClose(e) {
+  if (e.key === 'Escape') closeHowToModal();
+}
+
+helpBtn?.addEventListener('click', openHowToModal);
+howToClose?.addEventListener('click', closeHowToModal);
+
 // Build a new guaranteed-feasible puzzle
 function newPuzzle() {
   try {
@@ -132,11 +169,10 @@ function newPuzzle() {
 
     scheduleFitToViewport();
 
-    const sizeLabel = sizeKey.toUpperCase();
-    showToast(`New ${sizeLabel} puzzle generated (${N}×${N}, ${difficulty}).`);
+    // Removed "new puzzle" toast per requirement: only show toast on full completion.
   } catch (e) {
     console.error(e);
-    showToast('Unexpected error. See console.');
+    // Removed error toast per requirement.
   }
 }
 
@@ -404,14 +440,14 @@ function allTokensPlaced() {
   return true;
 }
 
+// Only feedback: toast on full completion (and confetti). No "incorrect" or other toasts.
 function validateCompletion() {
   for (const [cellKey, expected] of solutionLetters.entries()) {
     const cell = boardEl.querySelector(`.cell[data-coord="${cellKey}"] .char`);
     const actual = (cell?.textContent || '').toUpperCase();
     if (actual !== expected) {
       if (DEV) console.log('Mismatch at', cellKey, 'expected:', expected, 'got:', actual);
-      showToast('Board filled, but incorrect.');
-      return;
+      return; // no feedback until completely correct
     }
   }
   showToast('Solved!');
