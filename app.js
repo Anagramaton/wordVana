@@ -1,5 +1,5 @@
 import { WORDS } from './words.js';
-import { generateFeasiblePuzzle, MIN_WORD_LEN, MAX_WORD_LEN } from './generator.js';
+import { generateFeasiblePuzzle, MIN_WORD_LEN } from './generator.js';
 
 const DEV = true; // set false for production
 
@@ -15,6 +15,7 @@ const rightBorderEl = document.getElementById('rightBorder');
 const toastEl = document.getElementById('toast');
 const themeSelect = document.getElementById('themeSelect');
 const difficultySelect = document.getElementById('difficultySelect');
+const sizeSelect = document.getElementById('sizeSelect');
 const confettiCanvas = document.getElementById('confetti');
 const ctx = confettiCanvas?.getContext('2d');
 
@@ -28,63 +29,93 @@ function resizeConfetti() {
 }
 window.addEventListener('resize', resizeConfetti);
 
+// Size presets: adjust counts here in code (no UI)
+const SIZE_PRESETS = {
+  small:  { N: 8,  maxWordLen: 6,  wordCount: 8  },
+  medium: { N: 11, maxWordLen: 8, wordCount: 9 },
+  large:  { N: 16, maxWordLen: 11, wordCount: 13 }
+};
 
-// Board size target
-const TARGET_N = 16;
+// Persisted size key
+let sizeKey = localStorage.getItem('boardSize') || 'large';
 
-// Dictionary prep
-const DICT = WORDS
-  .map(w => w.trim())
-  .filter(Boolean)
-  .map(w => w.toUpperCase())
-  .filter(w => w.length >= MIN_WORD_LEN && w.length <= MAX_WORD_LEN);
+// Persisted difficulty
+let difficulty = (localStorage.getItem('puzzleDifficulty') || 'balanced');
+
+// Board size target (dynamic)
+let TARGET_N = SIZE_PRESETS[sizeKey].N;
+
+// Build dictionary per min/max
+function buildDictionary(minLen, maxLen) {
+  return WORDS
+    .map(w => w.trim())
+    .filter(Boolean)
+    .map(w => w.toUpperCase())
+    .filter(w => w.length >= minLen && w.length <= maxLen);
+}
 
 // State
-let solutionLetters = new Map();        // Map<"r,c", letter> — the placement solution
+let solutionLetters = new Map();
 let N = TARGET_N;
 let gridRef = [];
 let totalFillable = 0;
 
-let slotAssignment = null;              // { byCell, bySlot, slots }
-let slotEls = new Map();                // Map<slotId, HTMLElement>
-let tokens = new Map();                 // Map<tokenId (cellKey), TokenState>
-let selectedTokenId = null;             // currently selected token
+let slotAssignment = null;
+let slotEls = new Map();
+let tokens = new Map();
+let selectedTokenId = null;
 
-// Difficulty state (persisted)
-let difficulty = (localStorage.getItem('puzzleDifficulty') || 'balanced');
-
-/* UI: Theme and Difficulty */
+/* UI: Theme and Difficulty (size already exists) */
 themeSelect?.addEventListener('change', () => {
   document.documentElement.setAttribute('data-theme', themeSelect.value);
   scheduleFitToViewport();
 });
 
+if (sizeSelect) {
+  sizeSelect.value = sizeKey;
+  sizeSelect.addEventListener('change', () => {
+    sizeKey = sizeSelect.value;
+    localStorage.setItem('boardSize', sizeKey);
+    TARGET_N = SIZE_PRESETS[sizeKey].N;
+    newPuzzle();
+  });
+}
+
 if (difficultySelect) {
-  // Initialize from persisted value
   difficultySelect.value = difficulty;
   difficultySelect.addEventListener('change', () => {
     difficulty = difficultySelect.value;
     localStorage.setItem('puzzleDifficulty', difficulty);
-    newPuzzle(); // regenerate with new difficulty
+    newPuzzle();
   });
 }
 
 // Build a new guaranteed-feasible puzzle
 function newPuzzle() {
   try {
-    const raw = generatePuzzleWithinSizeGuaranteed(DICT, TARGET_N, { difficulty });
+    const preset = SIZE_PRESETS[sizeKey] ?? SIZE_PRESETS.large;
+    const minWordLen = MIN_WORD_LEN; // always 4
+    const maxWordLen = preset.maxWordLen;
+    const wordCount  = preset.wordCount;
+
+    const DICT = buildDictionary(minWordLen, maxWordLen);
+
+    const raw = generatePuzzleWithinSizeGuaranteed(
+      DICT,
+      preset.N,
+      { difficulty, minWordLen, maxWordLen, wordCount }
+    );
     const { grid, letters, slotAssignment: slots } = raw;
 
-    // Pad to TARGET_N (center)
     const { grid: paddedGrid, letters: shiftedLetters, padTop, padLeft } =
-      padGridToSize(grid, letters, TARGET_N);
+      padGridToSize(grid, letters, preset.N);
 
-    // Shift slot assignment indices/ids and byCell keys by pad offsets
     const shiftedAssignment = shiftSlotAssignmentKeys(slots, padTop, padLeft);
 
-    solutionLetters = shiftedLetters;           // exact placement solution
+    solutionLetters = shiftedLetters;
     gridRef = paddedGrid;
-    N = TARGET_N;
+    N = preset.N;
+    TARGET_N = preset.N;
     slotAssignment = shiftedAssignment;
 
     if (DEV) {
@@ -99,10 +130,10 @@ function newPuzzle() {
     renderOutsideSlots(N);
     renderTokensFromAssignment(shiftedLetters, shiftedAssignment);
 
-    // Fit board to viewport by sizing cell-size
     scheduleFitToViewport();
 
-    showToast(`New puzzle generated (${N}×${N}, ${difficulty}).`);
+    const sizeLabel = sizeKey.toUpperCase();
+    showToast(`New ${sizeLabel} puzzle generated (${N}×${N}, ${difficulty}).`);
   } catch (e) {
     console.error(e);
     showToast('Unexpected error. See console.');
@@ -112,7 +143,6 @@ function newPuzzle() {
 /** Guaranteed: keeps generating until raw grid size <= targetN and is feasible */
 function generatePuzzleWithinSizeGuaranteed(dictionary, targetN, options = {}) {
   for (;;) {
-    // Note: generateFeasiblePuzzle must support { difficulty } as shown in earlier updates.
     const out = generateFeasiblePuzzle(dictionary, options);
     if (out.grid.length <= targetN) return out;
   }
@@ -146,14 +176,12 @@ function padGridToSize(grid, letters, targetN) {
 function shiftSlotAssignmentKeys(assignment, padTop, padLeft) {
   if (!assignment) return null;
 
-  // Rebuild slots with shifted indices and ids
   const slots = assignment.slots.map(s => {
     const add = (s.side === 'L' || s.side === 'R') ? padTop : padLeft;
     const index = s.index + add;
     return { id: `${s.side}:${index}`, side: s.side, index };
   });
 
-  // Shift per-cell mapping and rebuild bySlot with new ids
   const byCell = new Map();
   const bySlot = new Map();
 
@@ -204,7 +232,6 @@ function renderBoard(grid) {
         cell.appendChild(char);
       }
 
-      // Board click handles both drop and undo
       cell.addEventListener('click', onBoardCellClick);
       boardEl.appendChild(cell);
     }
@@ -219,7 +246,6 @@ function renderOutsideSlots(n) {
   rightBorderEl.innerHTML = '';
   slotEls.clear();
 
-  // Top and Bottom: N columns (indices are columns)
   for (let c = 0; c < n; c++) {
     const t = document.createElement('div');
     t.className = 'slot empty';
@@ -238,7 +264,6 @@ function renderOutsideSlots(n) {
     slotEls.set(`B:${c}`, b);
   }
 
-  // Left and Right: N rows (indices are rows)
   for (let r = 0; r < n; r++) {
     const l = document.createElement('div');
     l.className = 'slot empty';
@@ -265,7 +290,7 @@ function renderTokensFromAssignment(letters, assignment) {
 
   for (const [cellKey, letter] of letters.entries()) {
     const info = assignment.byCell.get(cellKey);
-    if (!info) continue; // Should not happen if assignment is perfect
+    if (!info) continue;
 
     const tokenEl = document.createElement('div');
     tokenEl.className = 'token';
@@ -297,7 +322,6 @@ function renderTokensFromAssignment(letters, assignment) {
   }
 }
 
-/** Select a token (outside letter). Only highlights the token itself. */
 function selectToken(tokenId) {
   if (selectedTokenId && tokens.has(selectedTokenId)) {
     tokens.get(selectedTokenId).el.classList.remove('selected');
@@ -307,7 +331,6 @@ function selectToken(tokenId) {
   if (t && !t.placed) t.el.classList.add('selected');
 }
 
-/** Handle board clicks for drop or undo */
 function onBoardCellClick(e) {
   const cell = e.currentTarget;
   const r = Number(cell.dataset.r);
@@ -317,20 +340,17 @@ function onBoardCellClick(e) {
 
   const existingTokenId = cell.dataset.tokenId || null;
 
-  // Undo: clicking a placed letter returns it to its original slot
   if (existingTokenId) {
     const tok = tokens.get(existingTokenId);
     if (!tok) return;
-    // Clear cell
     const charEl = cell.querySelector('.char');
     if (charEl) charEl.textContent = '';
     cell.removeAttribute('data-token-id');
     cell.setAttribute('aria-label', `Row ${r + 1}, Column ${c + 1}: empty`);
-    // Restore token to its original slot
     const slotEl = slotEls.get(tok.slotId);
     if (slotEl) {
-      slotEl.classList.remove('empty');
-      slotEl.classList.add('occupied');
+      slotEl.classList.remove('occupied');
+      slotEl.classList.add('empty');
       slotEl.appendChild(tok.el);
     }
     tok.placed = false;
@@ -340,24 +360,20 @@ function onBoardCellClick(e) {
     return;
   }
 
-  // Drop: must have a selected outside token
   if (!selectedTokenId) return;
   const tok = tokens.get(selectedTokenId);
   if (!tok || tok.placed) return;
 
-  // Only fillable cells are valid targets
   if (!isFillable) return;
 
-  // Directional path rule: row vs column alignment
   const side = tok.side;
   const idx = tok.index;
   const allowed =
     (side === 'L' || side === 'R') ? (r === idx) :
     (side === 'T' || side === 'B') ? (c === idx) : false;
 
-  if (!allowed) return; // invalid drop does nothing
+  if (!allowed) return;
 
-  // Place the letter in the cell
   const charEl = cell.querySelector('.char');
   if (charEl) {
     charEl.textContent = tok.letter;
@@ -365,7 +381,6 @@ function onBoardCellClick(e) {
     cell.setAttribute('aria-label', `Row ${r + 1}, Column ${c + 1}: ${tok.letter}`);
   }
 
-  // Remove token from its slot (slot remains reserved for this token)
   if (tok.el.parentElement) {
     tok.el.parentElement.classList.remove('occupied');
     tok.el.parentElement.classList.add('empty');
@@ -377,13 +392,11 @@ function onBoardCellClick(e) {
   tok.el.classList.remove('selected');
   selectedTokenId = null;
 
-  // Completion check only when the last token is placed
   if (allTokensPlaced()) {
     validateCompletion();
   }
 }
 
-/** Are all tokens placed on the board? */
 function allTokensPlaced() {
   for (const t of tokens.values()) {
     if (!t.placed) return false;
@@ -391,7 +404,6 @@ function allTokensPlaced() {
   return true;
 }
 
-/** Validate the board against the solution (solutionLetters) */
 function validateCompletion() {
   for (const [cellKey, expected] of solutionLetters.entries()) {
     const cell = boardEl.querySelector(`.cell[data-coord="${cellKey}"] .char`);
@@ -413,28 +425,17 @@ function showToast(msg) {
   setTimeout(() => toastEl.classList.remove('show'), 1500);
 }
 
-/* =========================================
-   Fit the entire frame inside the viewport
-   by sizing the --cell-size variable
-   ========================================= */
 function fitToViewportByCellSize() {
   if (!wrapper) return;
-
-  // Read gap from CSS variables (in px)
   const rootStyles = getComputedStyle(document.documentElement);
   const gap = parseFloat(rootStyles.getPropertyValue('--gap')) || 0;
 
   const availW = wrapper.clientWidth;
   const availH = wrapper.clientHeight;
 
-  // Frame dimensions: (N + 2) * cell + (N + 1) * gap
   const maxCellW = (availW - (N + 1) * gap) / (N + 2);
   const maxCellH = (availH - (N + 1) * gap) / (N + 2);
-
-  // Use the limiting dimension; floor for crisp pixels
   const cellSize = Math.floor(Math.min(maxCellW, maxCellH));
-
-  // Ensure non-negative
   const safeCell = Math.max(1, cellSize);
 
   document.documentElement.style.setProperty('--cell-size', `${safeCell}px`);
@@ -484,7 +485,6 @@ function launchConfetti({
     ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
 
     confettiParticles.forEach(p => {
-      // Physics
       p.vy += gravity * step;
       p.vx *= drag;
       p.vy *= drag;
@@ -493,11 +493,9 @@ function launchConfetti({
       p.y += p.vy * step;
       p.rot += p.vr * step;
 
-      // Lifetime
       p.life -= delta;
       const alpha = Math.max(0, p.life / p.maxLife);
 
-      // Draw
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.translate(p.x, p.y);
@@ -518,14 +516,10 @@ function launchConfetti({
   });
 }
 
-
-
 function scheduleFitToViewport() {
-  // Run after layout settles
   requestAnimationFrame(fitToViewportByCellSize);
 }
 
-// Re-fit on window resize
 window.addEventListener('resize', scheduleFitToViewport);
 
 // Initial load

@@ -48,10 +48,20 @@ class Board {
  *
  * Options:
  * - difficulty: 'easy' | 'balanced' | 'hard' (affects outside slot assignment ambiguity)
+ * - minWordLen, maxWordLen: optional overrides for word length constraints
+ * - wordCount: optional override for number of words (default WORD_COUNT)
  */
-export function generateFeasiblePuzzle(dictionary, { difficulty = 'balanced' } = {}) {
+export function generateFeasiblePuzzle(
+  dictionary,
+  {
+    difficulty = 'balanced',
+    minWordLen = MIN_WORD_LEN,
+    maxWordLen = MAX_WORD_LEN,
+    wordCount = WORD_COUNT
+  } = {}
+) {
   for (;;) {
-    const words = pickConnectedWords(dictionary);
+    const words = pickConnectedWords(dictionary, minWordLen, maxWordLen, wordCount);
     const overlaps = buildOverlapMap(words);
     const board = new Board();
 
@@ -90,12 +100,23 @@ export function generateFeasiblePuzzle(dictionary, { difficulty = 'balanced' } =
  *
  * Options:
  * - difficulty: 'easy' | 'balanced' | 'hard'
+ * - minWordLen, maxWordLen
+ * - wordCount
  */
-export async function generateFeasiblePuzzleAsync(dictionary, { yieldEvery = 25, difficulty = 'balanced' } = {}) {
+export async function generateFeasiblePuzzleAsync(
+  dictionary,
+  {
+    yieldEvery = 25,
+    difficulty = 'balanced',
+    minWordLen = MIN_WORD_LEN,
+    maxWordLen = MAX_WORD_LEN,
+    wordCount = WORD_COUNT
+  } = {}
+) {
   let attempts = 0;
   for (;;) {
     attempts++;
-    const out = generateFeasiblePuzzle(dictionary, { difficulty });
+    const out = generateFeasiblePuzzle(dictionary, { difficulty, minWordLen, maxWordLen, wordCount });
     if (out) return { ...out, attempts };
     if (attempts % yieldEvery === 0) {
       await new Promise(r => setTimeout(r, 0));
@@ -106,30 +127,11 @@ export async function generateFeasiblePuzzleAsync(dictionary, { yieldEvery = 25,
 // ===============================
 // OUTSIDE SLOT FEASIBILITY (PERFECT MATCHING WITH DIFFICULTY BIAS)
 // ===============================
-
-/**
- * Perfect assignment from each solution cell (r,c) to a unique outside slot:
- * - Slots: L:r, R:r for each row; T:c, B:c for each column => 4N total
- * - Each cell can use exactly {L:r, R:r, T:c, B:c}
- *
- * Difficulty bias:
- * - easy: prefer the dimension (row vs column) with FEWER fillable cells in its lane
- * - hard: prefer the dimension with MORE fillable cells in its lane
- * - balanced: alternate bias to distribute choices
- *
- * Returns:
- * - null if no perfect assignment exists
- * - { byCell, bySlot, slots } otherwise
- *   - byCell: Map<"r,c", { side, index, id }>
- *   - bySlot: Map<slotId, "r,c">
- *   - slots:  Array<{ id, side, index }>
- */
 export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = {}) {
   const N = grid.length;
   const cells = [...letters.keys()]; // ["r,c"]
   const M = cells.length;
 
-  // Build slot list
   const slots = [];
   for (let r = 0; r < N; r++) {
     slots.push({ id: `L:${r}`, side: 'L', index: r });
@@ -145,7 +147,6 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
   const slotIndex = new Map();
   slots.forEach((s, i) => slotIndex.set(s.id, i));
 
-  // Precompute lane lengths (number of fillable cells per row/col)
   const rowLen = new Array(N).fill(0);
   const colLen = new Array(N).fill(0);
   for (let r = 0; r < N; r++) {
@@ -158,29 +159,25 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
   }
 
   function preferredFirstDimension(r, c, i) {
-    // i is the cell index for alternating in 'balanced'
     const rl = rowLen[r], cl = colLen[c];
     if (difficulty === 'hard') {
       return rl >= cl ? 'row' : 'col';
     } else if (difficulty === 'easy') {
       return rl <= cl ? 'row' : 'col';
     } else {
-      // balanced: alternate to spread choices
       return (i % 2 === 0) ? 'row' : 'col';
     }
   }
 
-  // Build adjacency: u in [0..M) -> list of candidate v slot indices (ordered by difficulty bias)
   const adj = Array.from({ length: M }, () => []);
   for (let u = 0; u < M; u++) {
     const key = cells[u];
     const [rStr, cStr] = key.split(',');
     const r = Number(rStr), c = Number(cStr);
     if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || r >= N || c < 0 || c >= N) {
-      return null; // malformed coordinate guards
+      return null;
     }
 
-    // Order slots to bias HK matching
     const firstDim = preferredFirstDimension(r, c, u);
     const orderedIds =
       firstDim === 'row'
@@ -193,9 +190,8 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
     }
   }
 
-  // Hopcroft–Karp maximum bipartite matching (cells U, slots V)
-  const pairU = new Array(M).fill(-1); // cell u -> slot v
-  const pairV = new Array(K).fill(-1); // slot v -> cell u
+  const pairU = new Array(M).fill(-1);
+  const pairV = new Array(K).fill(-1);
   const dist = new Array(M).fill(0);
   const INF = 1e9;
 
@@ -238,7 +234,6 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
   }
   if (matching !== M) return null;
 
-  // Build result maps
   const byCell = new Map();
   const bySlot = new Map();
   for (let u = 0; u < M; u++) {
@@ -254,22 +249,22 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
 // ===============================
 // WORD SELECTION (CONNECTED GRAPH)
 // ===============================
-function pickConnectedWords(dict) {
+function pickConnectedWords(dict, minLen = MIN_WORD_LEN, maxLen = MAX_WORD_LEN, wordCount = WORD_COUNT) {
   const pool = shuffle(dict)
-    .filter(w => w.length >= MIN_WORD_LEN && w.length <= MAX_WORD_LEN);
+    .filter(w => w.length >= minLen && w.length <= maxLen);
 
   if (!pool.length) throw new Error('No words in dictionary range');
 
   const chosen = [pool.pop()];
 
-  while (chosen.length < WORD_COUNT && pool.length) {
+  while (chosen.length < wordCount && pool.length) {
     const next = pool.find(w => chosen.some(c => sharesLetter(c, w)));
     if (!next) break;
     chosen.push(next);
     pool.splice(pool.indexOf(next), 1);
   }
 
-  if (chosen.length < WORD_COUNT) {
+  if (chosen.length < wordCount) {
     throw new Error('Insufficient overlap');
   }
   return chosen;

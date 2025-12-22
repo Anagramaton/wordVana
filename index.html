@@ -4,29 +4,34 @@
     <meta charset="utf-8" />
     <!-- Use the full safe area on iOS and get the correct visual viewport on mobile -->
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <title>Word Puzzle</title>
+    <title>WORDVANA</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <!-- Controls (fixed overlay) -->
     <div class="theme-select-overlay">
-      <label for="themeSelect">Theme</label>
       <select id="themeSelect" aria-label="Theme">
-        <option value="dark" selected>Dark</option>
-        <option value="light">Light</option>
-        <option value="colorblind">Colorblind</option>
+        <option value="dark" selected>DARK</option>
+        <option value="light">LIGHT</option>
+        <option value="colorblind">CB</option>
         <option value="bw">B/W</option>
-        <option value="high-contrast">High Contrast</option>
-        <option value="desert">Desert</option>
-        <option value="ice">Ice</option>
-        <option value="forest">Forest</option>
+        <option value="high-contrast">HIGH CONTRAST</option>
+        <option value="desert">DESERT</option>
+        <option value="ice">ICE</option>
+        <option value="forest">FOREST</option>
       </select>
 
-      <label for="difficultySelect" style="margin-left:12px;">Difficulty</label>
+      <!-- New: Board size -->
+      <select id="sizeSelect" aria-label="Board size">
+        <option value="small">SMALL (8×8)</option>
+        <option value="medium">MEDIUM (11×11)</option>
+        <option value="large" selected>LARGE (16×16)</option>
+      </select>
+
       <select id="difficultySelect" aria-label="Difficulty">
-        <option value="easy">Easy</option>
-        <option value="balanced" selected>Balanced</option>
-        <option value="hard">Hard</option>
+        <option value="easy">EASY</option>
+        <option value="balanced" selected>BALANCED</option>
+        <option value="hard">HARD</option>
       </select>
     </div>
 

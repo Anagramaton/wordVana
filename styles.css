@@ -1,9 +1,3 @@
-/* ============================================================
-   Strongly differentiated themes + clear playable vs empty cells
-   High-contrast dropdown menu options per theme for readability.
-   Board auto-fits via --cell-size (set by app.js).
-   ============================================================ */
-
 :root {
   /* Layout + typography */
   --gap: 4px;
@@ -239,7 +233,7 @@
   --empty-bg-2: #000000;
   --empty-border: #fffb00;
   --empty-shadow: none;
-  --empty-pattern: rgba(255,251,0,.40);
+  --empty-pattern: transparent;
 
   --token-bg-1: #000000;
   --token-bg-2: #000000;
@@ -506,6 +500,10 @@ body {
   box-shadow: var(--empty-shadow);
   opacity: .88;
 }
+[data-theme="high-contrast"] .cell.empty {
+  box-shadow: inset 0 0 0 2px #fffb00;
+}
+
 
 .cell .char {
   font-weight: var(--glyph-weight);
@@ -598,4 +596,11 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 2000;
+}
+
+#difficultySelect {
+  position: fixed;
+  top: var(--outer-margin);
+  right: var(--outer-margin);
+  z-index: 100;
 }
