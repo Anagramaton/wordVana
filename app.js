@@ -23,19 +23,50 @@ const ctx = confettiCanvas?.getContext('2d');
 const helpBtn = document.getElementById('howToPlayBtn');
 const howToModal = document.getElementById('howToPlayModal');
 const howToClose = document.getElementById('howToPlayClose');
-const winSound = new Audio('./sounds/win-fanfare.ogg');
+
+/* ===== Audio: win fanfare with mobile-safe unlock and format fallback ===== */
+function canPlay(type) {
+  const a = document.createElement('audio');
+  return !!a.canPlayType && a.canPlayType(type) !== '';
+}
+const winSound = new Audio(
+  canPlay('audio/ogg; codecs="vorbis"')
+    ? './sounds/win-fanfare.ogg'
+    : './sounds/win-fanfare.mp3' // iOS Safari prefers MP3/M4A
+);
 winSound.preload = 'auto';
 
-let audioUnlocked = false;
+let audioReady = false;
+function unlockAudio() {
+  if (audioReady) return;
+  audioReady = true;
 
-document.addEventListener('click', () => {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  winSound.play().then(() => winSound.pause()).catch(() => {});
-}, { once: true });
+  // Try to resume a WebAudio context (some Safari versions require this)
+  try {
+    window.__audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (window.__audioCtx.state === 'suspended') {
+      window.__audioCtx.resume();
+    }
+  } catch {}
 
+  // Warm up the HTMLAudio element silently (muted) to satisfy autoplay policies
+  winSound.muted = true;
+  winSound.play()
+    .then(() => {
+      winSound.pause();
+      winSound.currentTime = 0;
+      winSound.muted = false;
+    })
+    .catch(() => {
+      // If play fails, just unmute; it will succeed later during celebration click
+      winSound.muted = false;
+    });
+}
+// Use early, gesture-level events rather than 'click'
+document.addEventListener('pointerdown', unlockAudio, { once: true });
+document.addEventListener('keydown', unlockAudio, { once: true });
 
-
+/* ===== Confetti ===== */
 let confettiParticles = [];
 let confettiRunning = false;
 
@@ -332,7 +363,6 @@ function renderOutsideSlots(n) {
 }
 
 /* ===== Visual guidance: highlight legal destination cells ===== */
-
 const PATH_STEPS = 5; // classes path-0..path-4 for highlight cycling
 
 function clearAllowedHighlights() {
@@ -403,8 +433,8 @@ function renderTokensFromAssignment(letters, assignment) {
 
     const slotEl = slotEls.get(info.id);
     if (slotEl) {
-      slotEl.classList.remove('empty');
-      slotEl.classList.add('occupied');
+      slotEl.classList.remove('occupied');
+      slotEl.classList.add('empty');
       slotEl.appendChild(tokenEl);
     }
 
@@ -519,7 +549,6 @@ function allTokensPlaced() {
 }
 
 /* ===== Celebration: boosted confetti + UI color party ===== */
-
 function validateCompletion() {
   for (const [cellKey, expected] of solutionLetters.entries()) {
     const cell = boardEl.querySelector(`.cell[data-coord="${cellKey}"] .char`);
@@ -546,7 +575,7 @@ function getThemePathPalette() {
 }
 
 function startCelebration() {
-  // play win sound exactly when animation starts
+  // Play win sound at celebration start (now safely unlocked)
   winSound.currentTime = 0;
   winSound.play().catch(() => {});
 
@@ -557,7 +586,6 @@ function startCelebration() {
   boardEl.querySelectorAll('.cell .char').forEach(ch => {
     ch.classList.add('celebrate-text');
   });
-  // Tokens glow/bounce via CSS on the existing elements
 
   // Big confetti: multi-burst + rain tail, theme-matched colors
   launchConfetti({
