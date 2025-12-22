@@ -23,6 +23,18 @@ const ctx = confettiCanvas?.getContext('2d');
 const helpBtn = document.getElementById('howToPlayBtn');
 const howToModal = document.getElementById('howToPlayModal');
 const howToClose = document.getElementById('howToPlayClose');
+const winSound = new Audio('./sounds/win-fanfare.ogg');
+winSound.preload = 'auto';
+
+let audioUnlocked = false;
+
+document.addEventListener('click', () => {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  winSound.play().then(() => winSound.pause()).catch(() => {});
+}, { once: true });
+
+
 
 let confettiParticles = [];
 let confettiRunning = false;
@@ -319,10 +331,15 @@ function renderOutsideSlots(n) {
   }
 }
 
-/* Visual guidance: highlight legal destination cells for a token */
+/* ===== Visual guidance: highlight legal destination cells ===== */
+
+const PATH_STEPS = 5; // classes path-0..path-4 for highlight cycling
+
 function clearAllowedHighlights() {
   if (!boardEl) return;
-  boardEl.querySelectorAll('.cell.allowed').forEach(el => el.classList.remove('allowed'));
+  boardEl.querySelectorAll('.cell.allowed').forEach(el => {
+    el.classList.remove('allowed', 'path-0', 'path-1', 'path-2', 'path-3', 'path-4');
+  });
 }
 
 function previewAllowedForToken(token) {
@@ -332,19 +349,24 @@ function previewAllowedForToken(token) {
   const isRow = token.side === 'L' || token.side === 'R';
   const fixedIdx = token.index;
 
+  let seq = 0;
   if (isRow) {
     const r = fixedIdx;
     for (let c = 0; c < N; c++) {
       if (gridRef[r][c] !== 1) continue;
       const el = boardEl.querySelector(`.cell[data-coord="${r},${c}"]`);
-      el?.classList.add('allowed');
+      if (!el) continue;
+      el.classList.add('allowed', `path-${seq % PATH_STEPS}`);
+      seq++;
     }
   } else {
     const c = fixedIdx;
     for (let r = 0; r < N; r++) {
       if (gridRef[r][c] !== 1) continue;
       const el = boardEl.querySelector(`.cell[data-coord="${r},${c}"]`);
-      el?.classList.add('allowed');
+      if (!el) continue;
+      el.classList.add('allowed', `path-${seq % PATH_STEPS}`);
+      seq++;
     }
   }
 }
@@ -375,15 +397,14 @@ function renderTokensFromAssignment(letters, assignment) {
     });
     tokenEl.addEventListener('mouseleave', () => {
       const tok = tokens.get(cellKey);
-      // Keep highlights if it's the currently selected token
       if (!tok || selectedTokenId === cellKey) return;
       clearAllowedHighlights();
     });
 
     const slotEl = slotEls.get(info.id);
     if (slotEl) {
-      slotEl.classList.remove('occupied');
-      slotEl.classList.add('empty');
+      slotEl.classList.remove('empty');
+      slotEl.classList.add('occupied');
       slotEl.appendChild(tokenEl);
     }
 
@@ -440,7 +461,6 @@ function onBoardCellClick(e) {
     tok.currentCellKey = null;
     tok.el.classList.remove('selected');
 
-    // If the user just freed a cell, reset selection and highlights
     selectedTokenId = null;
     clearAllowedHighlights();
     return;
@@ -498,7 +518,8 @@ function allTokensPlaced() {
   return true;
 }
 
-// Only feedback: toast on full completion (and confetti). No "incorrect" or other toasts.
+/* ===== Celebration: boosted confetti + UI color party ===== */
+
 function validateCompletion() {
   for (const [cellKey, expected] of solutionLetters.entries()) {
     const cell = boardEl.querySelector(`.cell[data-coord="${cellKey}"] .char`);
@@ -509,14 +530,66 @@ function validateCompletion() {
     }
   }
   showToast('Solved!');
-  launchConfetti();
+  startCelebration();
+}
+
+/* Read theme palette (fall back if not defined) */
+function getThemePathPalette() {
+  const styles = getComputedStyle(document.documentElement);
+  const colors = [];
+  for (let i = 0; i < 5; i++) {
+    const v = styles.getPropertyValue(`--path-${i}`).trim();
+    if (v) colors.push(v);
+  }
+  if (colors.length) return colors;
+  return ['#68e3ff', '#a78bfa', '#f472b6', '#60a5fa', '#22d3ee'];
+}
+
+function startCelebration() {
+  // play win sound exactly when animation starts
+  winSound.currentTime = 0;
+  winSound.play().catch(() => {});
+
+  // Celebration UI class (CSS drives color changes/animations)
+  document.documentElement.classList.add('celebrating');
+
+  // Animate all letters subtly even if empty (only visible ones show effect)
+  boardEl.querySelectorAll('.cell .char').forEach(ch => {
+    ch.classList.add('celebrate-text');
+  });
+  // Tokens glow/bounce via CSS on the existing elements
+
+  // Big confetti: multi-burst + rain tail, theme-matched colors
+  launchConfetti({
+    mode: 'multiBurst',
+    bursts: 4,
+    countPerBurst: 260,
+    rainTailMs: 1600,
+    duration: 5200,
+    gravity: 0.38,
+    spread: Math.PI * 1.35,
+    drag: 0.985,
+    palette: getThemePathPalette(),
+    mixShapes: true
+  });
+
+  // Auto end celebration state after ~6 seconds
+  setTimeout(stopCelebration, 6000);
+}
+
+function stopCelebration() {
+  document.documentElement.classList.remove('celebrating');
+  boardEl.querySelectorAll('.cell .char').forEach(ch => {
+    ch.classList.remove('celebrate-text');
+  });
+  // Confetti will self-clear when particles expire
 }
 
 function showToast(msg) {
   if (!toastEl) return;
   toastEl.textContent = msg;
   toastEl.classList.add('show');
-  setTimeout(() => toastEl.classList.remove('show'), 1500);
+  setTimeout(() => toastEl.classList.remove('show'), 1800);
 }
 
 function fitToViewportByCellSize() {
@@ -535,39 +608,57 @@ function fitToViewportByCellSize() {
   document.documentElement.style.setProperty('--cell-size', `${safeCell}px`);
 }
 
+/* Enhanced confetti: multi-burst + rain, mixed shapes and theme colors */
 function launchConfetti({
-  count = 260,
-  duration = 2600,
+  mode = 'burst',           // 'burst' | 'multiBurst'
+  bursts = 3,               // number of bursts (multiBurst)
+  countPerBurst = 300,      // particles per burst
+  rainTailMs = 1200,        // spawn additional particles for this long
+  duration = 4200,
   gravity = 0.35,
   spread = Math.PI * 1.1,
-  drag = 0.985
+  drag = 0.985,
+  palette = ['#68e3ff', '#a78bfa', '#f472b6', '#60a5fa', '#22d3ee'],
+  mixShapes = true          // rect, circle, triangle
 } = {}) {
   resizeConfetti();
   confettiParticles = [];
   confettiRunning = true;
 
-  const cx = confettiCanvas.width / 2;
-  const cy = confettiCanvas.height * 0.4;
+  const W = confettiCanvas.width;
+  const H = confettiCanvas.height;
 
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * spread - spread / 2;
-    const speed = Math.random() * 10 + 8;
-    const size = Math.random() * 6 + 4;
+  const centers = mode === 'multiBurst'
+    ? [
+        [W * 0.2, H * 0.35],
+        [W * 0.5, H * 0.35],
+        [W * 0.8, H * 0.35],
+        [W * 0.5, H * 0.20]
+      ].slice(0, bursts)
+    : [[W / 2, H * 0.4]];
 
-    confettiParticles.push({
-      x: cx,
-      y: cy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 5,
-      w: size,
-      h: size * (Math.random() > 0.5 ? 1.6 : 1),
-      rot: Math.random() * Math.PI,
-      vr: (Math.random() - 0.5) * 0.25,
-      color: `hsl(${Math.random() * 360}, 90%, 60%)`,
-      life: duration,
-      maxLife: duration
-    });
+  // Spawn a burst at each center
+  for (const [cx, cy] of centers) {
+    spawnBurst({ cx, cy, count: countPerBurst, spread, palette, mixShapes });
   }
+
+  // Optional rain tail (small additional emissions from top)
+  const rainStart = performance.now();
+  const rain = () => {
+    const now = performance.now();
+    if (now - rainStart > rainTailMs) return;
+    spawnBurst({
+      cx: Math.random() * W,
+      cy: -8,
+      count: Math.floor(countPerBurst * 0.25),
+      spread: Math.PI * 0.5,
+      palette,
+      mixShapes,
+      downOnly: true
+    });
+    setTimeout(rain, 140);
+  };
+  if (rainTailMs > 0) rain();
 
   let lastTime = performance.now();
 
@@ -576,7 +667,7 @@ function launchConfetti({
     lastTime = t;
     const step = delta / 16;
 
-    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    ctx.clearRect(0, 0, W, H);
 
     confettiParticles.forEach(p => {
       p.vy += gravity * step;
@@ -590,24 +681,77 @@ function launchConfetti({
       p.life -= delta;
       const alpha = Math.max(0, p.life / p.maxLife);
 
+      if (alpha <= 0) return;
+
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
       ctx.fillStyle = p.color;
-      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.w * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.shape === 'triangle') {
+        ctx.beginPath();
+        ctx.moveTo(-p.w / 2, p.h / 2);
+        ctx.lineTo(0, -p.h / 2);
+        ctx.lineTo(p.w / 2, p.h / 2);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      }
       ctx.restore();
     });
 
-    confettiParticles = confettiParticles.filter(p => p.life > 0);
+    confettiParticles = confettiParticles.filter(p => p.life > 0 && p.y < H + 40);
 
     if (confettiParticles.length) {
       requestAnimationFrame(tick);
     } else {
       confettiRunning = false;
-      ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      ctx.clearRect(0, 0, W, H);
     }
   });
+
+  function spawnBurst({
+    cx,
+    cy,
+    count,
+    spread,
+    palette,
+    mixShapes,
+    downOnly = false
+  }) {
+    for (let i = 0; i < count; i++) {
+      const angle = downOnly
+        ? Math.random() * Math.PI + Math.PI / 2
+        : Math.random() * spread - spread / 2;
+      const speed = Math.random() * 12 + 10;
+      const size = Math.random() * 7 + 4;
+
+      const color = palette[Math.floor(Math.random() * palette.length)];
+      const shapes = mixShapes ? ['rect', 'circle', 'triangle'] : ['rect'];
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+
+      confettiParticles.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - (downOnly ? 0 : 6),
+        w: size,
+        h: size * (Math.random() > 0.5 ? 1.6 : 1),
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.35,
+        color,
+        life: duration,
+        maxLife: duration,
+        shape
+      });
+    }
+  }
 }
 
 function scheduleFitToViewport() {
