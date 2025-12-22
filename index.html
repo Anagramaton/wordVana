@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Word Puzzle</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- Controls (fixed overlay) -->
+    <div class="theme-select-overlay">
+      <label for="themeSelect">Theme</label>
+      <select id="themeSelect">
+        <option value="dark" selected>Dark</option>
+        <option value="light">Light</option>
+        <option value="colorblind">Colorblind</option>
+        <option value="bw">B/W</option>
+        <option value="high-contrast">High Contrast</option>
+        <option value="desert">Desert</option>
+        <option value="ice">Ice</option>
+        <option value="forest">Forest</option>
+      </select>
+
+      <label for="difficultySelect" style="margin-left:12px;">Difficulty</label>
+      <select id="difficultySelect">
+        <option value="easy">Easy</option>
+        <option value="balanced" selected>Balanced</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+
+    <div class="game">
+      <div id="boardWrapper" class="board-wrapper">
+        <div id="frame" class="frame">
+          <!-- Top border (N slots) -->
+          <div id="topBorder" class="border top"></div>
+
+          <!-- Left border (N slots) -->
+          <div id="leftBorder" class="border left"></div>
+
+          <!-- Board grid -->
+          <div id="board" class="board">
+            <div class="grid"></div>
+          </div>
+
+          <!-- Right border (N slots) -->
+          <div id="rightBorder" class="border right"></div>
+
+          <!-- Bottom border (N slots) -->
+          <div id="bottomBorder" class="border bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="confetti"></canvas>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

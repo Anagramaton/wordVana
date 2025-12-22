@@ -1,0 +1,601 @@
+/* ============================================================
+   Strongly differentiated themes + clear playable vs empty cells
+   High-contrast dropdown menu options per theme for readability.
+   Board auto-fits via --cell-size (set by app.js).
+   ============================================================ */
+
+:root {
+  /* Layout + typography */
+  --gap: 4px;
+  --radius: 12px;
+  --cell-size: 50px; /* dynamically set by app.js to fill viewport */
+  --outer-margin: 16px;
+
+  --char-scale: 0.62;
+  --token-scale: 0.54;
+  --min-char: 15px;
+  --max-char: 32px;
+  --min-token: 13px;
+  --max-token: 28px;
+  --glyph-weight: 800;
+  --glyph-shadow: 0 1px 0 rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.25);
+  --glyph-tracking: 0.015em;
+
+  /* Base fallbacks (overridden by themes) */
+  --bg: #0b0f18;
+  --bg-2: #0e1422;
+  --text: #e6f0ff;
+  --muted: #8aa2c0;
+
+  /* Playable vs empty cell system (overridden per theme) */
+  --fillable-bg-1: #132a52;
+  --fillable-bg-2: #1b3a6e;
+  --fillable-border: #3a6bbf;
+  --fillable-shadow: 0 8px 22px rgba(0,0,0,.45);
+
+  --empty-bg-1: #0a1424;
+  --empty-bg-2: #0c182c;
+  --empty-border: #20334d;
+  --empty-shadow: 0 4px 12px rgba(0,0,0,.25);
+  --empty-pattern: rgba(255,255,255,.06); /* subtle dots overlay */
+
+  /* Token and slot */
+  --token-bg-1: #0f1f34;
+  --token-bg-2: #0b1730;
+  --token-border: #203a61;
+  --token-text: #e6f0ff;
+  --token-shadow: 0 10px 28px rgba(0,0,0,.55);
+
+  --slot-border: #2a3d5e;
+  --slot-bg-1: rgba(255,255,255,.05);
+  --slot-bg-2: rgba(255,255,255,.03);
+
+  /* Accents */
+  --accent: #00c2ff;
+  --accent-2: #68e3ff;
+  --glow: 0 0 0 2px rgba(0,194,255,.55), 0 0 24px rgba(0,194,255,.35);
+
+  /* Frame shadow */
+  --frame-shadow: 0 30px 80px rgba(0,0,0,.55);
+
+  /* Menu palette (explicit high contrast for native dropdown options) */
+  --menu-bg: #0f1628;
+  --menu-fg: #e6f0ff;
+  --menu-border: #2a3d5e;
+}
+
+/* ============================================================
+   Theme palettes (high differentiation for playable vs empty)
+   Also provide menu palettes per theme for readable dropdown.
+   ============================================================ */
+
+/* Neon Night (Dark) */
+[data-theme="dark"] {
+  --bg: #071021;
+  --bg-2: #0c162e;
+  --text: #e6f0ff;
+  --muted: #8aa2c0;
+
+  --fillable-bg-1: #0f2b6b;
+  --fillable-bg-2: #153b8f;
+  --fillable-border: #4a89ff;
+  --fillable-shadow: 0 10px 24px rgba(19, 59, 143, .45);
+
+  --empty-bg-1: #06122e;
+  --empty-bg-2: #081738;
+  --empty-border: #213a73;
+  --empty-shadow: 0 8px 18px rgba(8, 23, 56, .35);
+  --empty-pattern: rgba(106, 142, 255, .15);
+
+  --token-bg-1: #0a1e3f;
+  --token-bg-2: #08203a;
+  --token-border: #2856a4;
+  --token-text: #e6f0ff;
+
+  --slot-border: #2a4f8a;
+  --slot-bg-1: rgba(74,137,255,.12);
+  --slot-bg-2: rgba(74,137,255,.06);
+
+  --accent: #00e0ff;
+  --accent-2: #86f3ff;
+  --glow: 0 0 0 2px rgba(0,224,255,.55), 0 0 24px rgba(0,224,255,.35);
+
+  --frame-shadow: 0 36px 90px rgba(0,0,0,.6);
+
+  --menu-bg: #0f1c35;
+  --menu-fg: #e6f0ff;
+  --menu-border: #2a4f8a;
+}
+
+/* Porcelain Paper (Light) */
+[data-theme="light"] {
+  --bg: #f6f9ff;
+  --bg-2: #e9f0fb;
+  --text: #101423;
+  --muted: #4b5570;
+
+  --fillable-bg-1: #dfe9ff;
+  --fillable-bg-2: #cfe0ff;
+  --fillable-border: #8fb3ff;
+  --fillable-shadow: 0 8px 24px rgba(11, 108, 255, .15);
+
+  --empty-bg-1: #f7fbff;
+  --empty-bg-2: #eef4ff;
+  --empty-border: #cbd6ee;
+  --empty-shadow: 0 6px 18px rgba(15, 23, 42, .12);
+  --empty-pattern: rgba(11,108,255,.12);
+
+  --token-bg-1: #ffffff;
+  --token-bg-2: #f1f6ff;
+  --token-border: #b7c7ea;
+  --token-text: #101423;
+
+  --slot-border: #cdd8ee;
+  --slot-bg-1: rgba(11,108,255,.14);
+  --slot-bg-2: rgba(11,108,255,.07);
+
+  --accent: #0b6cff;
+  --accent-2: #71a6ff;
+  --glow: 0 0 0 2px rgba(11,108,255,.35), 0 0 24px rgba(11,108,255,.25);
+
+  --frame-shadow: 0 24px 60px rgba(15, 23, 42, .15);
+
+  --menu-bg: #ffffff;
+  --menu-fg: #101423;
+  --menu-border: #cbd6ee;
+}
+
+/* Tritanopia-friendly (Colorblind) – blue vs amber */
+[data-theme="colorblind"] {
+  --bg: #0f172a;
+  --bg-2: #0c1426;
+  --text: #f8fbff;
+  --muted: #94a3b8;
+
+  /* Strong blue for playable; muted navy for empty; amber accents/patterns */
+  --fillable-bg-1: #0f2a63;
+  --fillable-bg-2: #193d8a;
+  --fillable-border: #3b78ff;
+  --fillable-shadow: 0 10px 26px rgba(25, 61, 138, .45);
+
+  --empty-bg-1: #0a1c3d;
+  --empty-bg-2: #0c234b;
+  --empty-border: #243c6f;
+  --empty-shadow: 0 8px 20px rgba(12, 35, 75, .35);
+  --empty-pattern: rgba(255,183,3,.20); /* amber dots for non-playable */
+
+  --token-bg-1: #142239;
+  --token-bg-2: #0d1b32;
+  --token-border: #2e4b7a;
+  --token-text: #f8fbff;
+
+  --slot-border: #38558a;
+  --slot-bg-1: rgba(255,183,3,.20);
+  --slot-bg-2: rgba(255,183,3,.10);
+
+  --accent: #ffb703;  /* strong amber */
+  --accent-2: #ffd166;
+  --glow: 0 0 0 2px rgba(255,183,3,.6), 0 0 26px rgba(255,183,3,.35);
+
+  --frame-shadow: 0 28px 72px rgba(0,0,0,.55);
+
+  --menu-bg: #0f1c35;
+  --menu-fg: #f8fbff;
+  --menu-border: #38558a;
+}
+
+/* Pure Mono (B/W) – ultra clear distinction */
+[data-theme="bw"] {
+  --bg: #000000;
+  --bg-2: #111111;
+  --text: #ffffff;
+  --muted: #d0d0d0;
+
+  --fillable-bg-1: #2a2a2a;
+  --fillable-bg-2: #3b3b3b;
+  --fillable-border: #f2f2f2;
+  --fillable-shadow: 0 10px 24px rgba(255,255,255,.05);
+
+  --empty-bg-1: #0b0b0b;
+  --empty-bg-2: #141414;
+  --empty-border: #6a6a6a;
+  --empty-shadow: 0 6px 18px rgba(255,255,255,.04);
+  --empty-pattern: rgba(255,255,255,.24);
+
+  --token-bg-1: #000000;
+  --token-bg-2: #1a1a1a;
+  --token-border: #8a8a8a;
+  --token-text: #ffffff;
+
+  --slot-border: #8a8a8a;
+  --slot-bg-1: rgba(255,255,255,.18);
+  --slot-bg-2: rgba(255,255,255,.10);
+
+  --accent: #ffffff;
+  --accent-2: #f2f2f2;
+  --glow: 0 0 0 2px rgba(255,255,255,.45), 0 0 20px rgba(255,255,255,.30);
+
+  --frame-shadow: 0 32px 84px rgba(255,255,255,.06);
+
+  --menu-bg: #0f0f0f;
+  --menu-fg: #ffffff;
+  --menu-border: #6a6a6a;
+}
+
+/* High Contrast (Accessibility) – max separation, real HC palette */
+[data-theme="high-contrast"] {
+  --bg: #000000;
+  --bg-2: #000000;
+  --text: #ffffff;   /* main text white */
+  --muted: #fffb00;  /* labels yellow for visibility */
+
+  /* Playable cells: black with WHITE border; Empty: black with YELLOW dashed border + pattern */
+  --fillable-bg-1: #000000;
+  --fillable-bg-2: #000000;
+  --fillable-border: #ffffff;
+  --fillable-shadow: none;
+
+  --empty-bg-1: #000000;
+  --empty-bg-2: #000000;
+  --empty-border: #fffb00;
+  --empty-shadow: none;
+  --empty-pattern: rgba(255,251,0,.40);
+
+  --token-bg-1: #000000;
+  --token-bg-2: #000000;
+  --token-border: #ffffff;
+  --token-text: #ffffff;
+
+  --slot-border: #fffb00;
+  --slot-bg-1: rgba(255,251,0,.35);
+  --slot-bg-2: rgba(255,251,0,.20);
+
+  --accent: #00e5ff;
+  --accent-2: #7cf2ff;
+  --glow: 0 0 0 2px rgba(0,229,255,.6), 0 0 28px rgba(0,229,255,.45);
+
+  --frame-shadow: none;
+
+  --menu-bg: #000000;
+  --menu-fg: #ffffff;
+  --menu-border: #fffb00;
+}
+
+/* Desert Mirage – warm and sandy */
+[data-theme="desert"] {
+  --bg: #2b1f14;
+  --bg-2: #3a2a1d;
+  --text: #f7e1c3;
+  --muted: #d5b89c;
+
+  --fillable-bg-1: #6b3f1c;
+  --fillable-bg-2: #874f22;
+  --fillable-border: #ffb26a;
+  --fillable-shadow: 0 10px 24px rgba(107, 63, 28, .45);
+
+  --empty-bg-1: #3a2a1d;
+  --empty-bg-2: #2e2319;
+  --empty-border: #8a5b35;
+  --empty-shadow: 0 8px 20px rgba(46, 35, 25, .35);
+  --empty-pattern: rgba(255,159,28,.24);
+
+  --token-bg-1: #5a3c22;
+  --token-bg-2: #4a331d;
+  --token-border: #d98c3f;
+  --token-text: #f7e1c3;
+
+  --slot-border: #b57434;
+  --slot-bg-1: rgba(255,159,28,.24);
+  --slot-bg-2: rgba(255,159,28,.12);
+
+  --accent: #ff9f1c;
+  --accent-2: #ffd29b;
+  --glow: 0 0 0 2px rgba(255,159,28,.5), 0 0 28px rgba(255,159,28,.35);
+
+  --frame-shadow: 0 26px 70px rgba(26, 18, 12, .65);
+
+  --menu-bg: #3a2a1d;
+  --menu-fg: #f7e1c3;
+  --menu-border: #8a5b35;
+}
+
+/* Ice Cavern – crisp cool blues */
+[data-theme="ice"] {
+  --bg: #0b1020;
+  --bg-2: #0f172a;
+  --text: #e6f0ff;
+  --muted: #b6c8e5;
+
+  --fillable-bg-1: #143a74;
+  --fillable-bg-2: #1b4b92;
+  --fillable-border: #8fd7ff;
+  --fillable-shadow: 0 10px 26px rgba(27, 75, 146, .45);
+
+  --empty-bg-1: #0f223f;
+  --empty-bg-2: #10294c;
+  --empty-border: #2a4f8a;
+  --empty-shadow: 0 8px 20px rgba(16, 41, 76, .35);
+  --empty-pattern: rgba(124,211,255,.24);
+
+  --token-bg-1: #1b2a4e;
+  --token-bg-2: #162345;
+  --token-border: #7cd3ff;
+  --token-text: #e6f0ff;
+
+  --slot-border: #7cd3ff;
+  --slot-bg-1: rgba(124,211,255,.24);
+  --slot-bg-2: rgba(124,211,255,.12);
+
+  --accent: #7cd3ff;
+  --accent-2: #b9ecff;
+  --glow: 0 0 0 2px rgba(124,211,255,.55), 0 0 28px rgba(124,211,255,.35);
+
+  --frame-shadow: 0 28px 72px rgba(14, 28, 56, .55);
+
+  --menu-bg: #142239;
+  --menu-fg: #e6f0ff;
+  --menu-border: #2a4f8a;
+}
+
+/* Forest Canopy – lush greens */
+[data-theme="forest"] {
+  --bg: #0f2a1f;
+  --bg-2: #0b2017;
+  --text: #d8f3dc;
+  --muted: #a3c9a8;
+
+  --fillable-bg-1: #105f3d;
+  --fillable-bg-2: #167c50;
+  --fillable-border: #8fe3c0;
+  --fillable-shadow: 0 10px 26px rgba(16, 95, 61, .45);
+
+  --empty-bg-1: #0d2e23;
+  --empty-bg-2: #0f382a;
+  --empty-border: #287255;
+  --empty-shadow: 0 8px 20px rgba(13, 46, 35, .35);
+  --empty-pattern: rgba(149,213,178,.24);
+
+  --token-bg-1: #164532;
+  --token-bg-2: #133d2c;
+  --token-border: #95d5b2;
+  --token-text: #d8f3dc;
+
+  --slot-border: #95d5b2;
+  --slot-bg-1: rgba(149,213,178,.24);
+  --slot-bg-2: rgba(149,213,178,.12);
+
+  --accent: #95d5b2;
+  --accent-2: #c9f7dd;
+  --glow: 0 0 0 2px rgba(149,213,178,.55), 0 0 28px rgba(149,213,178,.35);
+
+  --frame-shadow: 0 28px 72px rgba(5, 25, 18, .55);
+
+  --menu-bg: #133d2c;
+  --menu-fg: #d8f3dc;
+  --menu-border: #287255;
+}
+
+/* ============================================================
+   Global layout and components
+   ============================================================ */
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+html { transition: background .25s ease, color .25s ease; }
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  display: grid;
+  grid-template-rows: 1fr;
+  background:
+    radial-gradient(1200px 600px at 12% 0%, var(--bg-2) 0%, var(--bg) 60%, var(--bg) 100%);
+}
+
+/* Controls overlay (remove blur to avoid dropdown contrast issues) */
+.theme-select-overlay {
+  position: fixed;
+  top: var(--outer-margin);
+  left: var(--outer-margin);
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.theme-select-overlay label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* High-contrast native select and option styling */
+.theme-select-overlay select {
+  color: var(--menu-fg);
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.25);
+  appearance: auto; /* let OS render the dropdown */
+}
+.theme-select-overlay select:focus {
+  outline: 2px solid var(--accent);
+  box-shadow: var(--glow);
+}
+.theme-select-overlay select option {
+  color: var(--menu-fg);
+  background: var(--menu-bg); /* improves Windows dropdown contrast */
+}
+
+/* Game area aligned toward the top */
+.game {
+  position: relative;
+  width: 100vw;
+  height: 100dvh; /* use dynamic viewport height on mobile */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.board-wrapper {
+  position: relative;
+  width: calc(100vw - 2 * var(--outer-margin));
+  height: calc(100dvh - 2 * var(--outer-margin));
+  margin: 0 var(--outer-margin);
+  display: grid;
+  place-items: center;
+}
+
+/* Frame and grid */
+.frame {
+  display: grid;
+  grid-template-columns: auto calc(var(--n) * var(--cell-size) + (var(--n) - 1) * var(--gap)) auto;
+  grid-template-rows: auto calc(var(--n) * var(--cell-size) + (var(--n) - 1) * var(--gap)) auto;
+  gap: var(--gap);
+  align-items: center;
+  justify-items: center;
+  border-radius: 18px;
+  box-shadow: var(--frame-shadow);
+  background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,.02) 100%);
+}
+.top { grid-column: 2 / 3; grid-row: 1 / 2; }
+.left { grid-column: 1 / 2; grid-row: 2 / 3; }
+.board { grid-column: 2 / 3; grid-row: 2 / 3; }
+.right { grid-column: 3 / 4; grid-row: 2 / 3; }
+.bottom { grid-column: 2 / 3; grid-row: 3 / 4; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n), var(--cell-size));
+  grid-auto-rows: var(--cell-size);
+  gap: var(--gap);
+}
+
+/* Cells */
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  transition: transform .06s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  font-size: clamp(var(--min-char), calc(var(--cell-size) * var(--char-scale)), var(--max-char));
+  color: var(--text);
+  user-select: none;
+  cursor: default;
+  position: relative;
+}
+
+/* Playable cells: bold color, solid border, stronger shadow */
+.cell.fillable {
+  background: linear-gradient(150deg, var(--fillable-bg-1), var(--fillable-bg-2));
+  border: 1px solid var(--fillable-border);
+  box-shadow: var(--fillable-shadow);
+}
+.cell.fillable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(0,0,0,.30), inset 0 0 0 1px color-mix(in srgb, var(--accent), transparent 25%);
+}
+
+/* Empty cells: muted color, dashed border, dotted pattern overlay */
+.cell.empty {
+  background:
+    linear-gradient(150deg, var(--empty-bg-1), var(--empty-bg-2)),
+    radial-gradient(circle at 25% 25%, var(--empty-pattern) 1px, transparent 1px),
+    radial-gradient(circle at 75% 75%, var(--empty-pattern) 1px, transparent 1px);
+  background-size: auto, 12px 12px, 12px 12px;
+  border: 1px dashed var(--empty-border);
+  box-shadow: var(--empty-shadow);
+  opacity: .88;
+}
+
+.cell .char {
+  font-weight: var(--glyph-weight);
+  line-height: 1;
+  letter-spacing: var(--glyph-tracking);
+  text-shadow: var(--glyph-shadow);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Borders hold outside slots */
+.border {
+  display: grid;
+  gap: var(--gap);
+}
+.border.top,
+.border.bottom {
+  grid-template-columns: repeat(var(--n), var(--cell-size));
+  align-items: end;
+}
+.border.left,
+.border.right {
+  grid-template-rows: repeat(var(--n), var(--cell-size));
+  align-items: center;
+}
+
+/* Outside slot + token */
+.slot {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  border-radius: var(--radius);
+  border: 1px dashed var(--slot-border);
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--slot-bg-1), var(--slot-bg-2));
+}
+.slot.empty { opacity: .85; }
+.slot.occupied { opacity: 1; }
+
+.token {
+  width: calc(var(--cell-size) - 2px);
+  height: calc(var(--cell-size) - 2px);
+  background: linear-gradient(145deg, var(--token-bg-1), var(--token-bg-2));
+  color: var(--token-text);
+  border: 1px solid var(--token-border);
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  font-weight: var(--glyph-weight);
+  font-size: clamp(var(--min-token), calc(var(--cell-size) * var(--token-scale)), var(--max-token));
+  line-height: 1;
+  letter-spacing: var(--glyph-tracking);
+  text-shadow: var(--glyph-shadow);
+  user-select: none;
+  cursor: pointer;
+  box-shadow: var(--token-shadow);
+  transition: transform .06s ease, box-shadow .2s ease, background .2s ease, outline-color .2s ease;
+}
+.token:hover { transform: translateY(-1px); }
+.token.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  box-shadow: var(--glow);
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--empty-bg-1), var(--empty-bg-2));
+  color: var(--text);
+  border: 1px solid var(--empty-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  opacity: 0;
+  transition: opacity .2s ease, transform .2s ease;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: var(--empty-shadow);
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-6px);
+}
+
+#confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2000;
+}
