@@ -80,8 +80,8 @@ window.addEventListener('resize', resizeConfetti);
 // Size presets: adjust counts here in code (no UI)
 const SIZE_PRESETS = {
   small:  { N: 8,  maxWordLen: 5,  wordCount: 7  },
-  medium: { N: 11, maxWordLen: 8, wordCount: 10 },
-  large:  { N: 16, maxWordLen: 11, wordCount: 13 }
+  medium: { N: 11, maxWordLen: 8, wordCount: 9 },
+  large:  { N: 16, maxWordLen: 11, wordCount: 10 }
 };
 
 // Persisted size key
