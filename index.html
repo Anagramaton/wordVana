@@ -4,108 +4,111 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>WORDVANA</title>
+
     <link rel="stylesheet" href="./styles.css" />
+
+    <!-- Preload win sounds -->
+    <link rel="preload" href="./sounds/win-fanfare.ogg" as="audio" type="audio/ogg">
+    <link rel="preload" href="./sounds/win-fanfare.mp3" as="audio" type="audio/mpeg">
   </head>
+
   <body>
-    <!-- Controls (fixed overlay) -->
-    <div class="theme-select-overlay">
-      <select id="themeSelect" aria-label="Theme">
-        <option value="dark" selected>DARK</option>
-        <option value="light">LIGHT</option>
-        <option value="colorblind">CB</option>
-        <option value="bw">B/W</option>
-        <option value="high-contrast">HIGH CONTRAST</option>
-        <option value="desert">DESERT</option>
-        <option value="ice">ICE</option>
-        <option value="forest">FOREST</option>
-      </select>
 
-      <select id="sizeSelect" aria-label="Board size">
-        <option value="small">SMALL (8×8)</option>
-        <option value="medium">MEDIUM (11×11)</option>
-        <option value="large" selected>LARGE (16×16)</option>
-      </select>
+    <!-- SETTINGS BUTTON (single entry point) -->
+    <button id="settingsBtn" class="ellipsis-btn" aria-label="Settings">…</button>
 
-      <select id="difficultySelect" aria-label="Difficulty">
-        <option value="easy">EASY</option>
-        <option value="balanced" selected>BALANCED</option>
-        <option value="hard">HARD</option>
-      </select>
-    </div>
 
-    <!-- Help button -->
-    <button id="howToPlayBtn" class="help-btn" aria-label="How to Play">?</button>
-
-    <!-- Game area -->
+    <!-- GAME AREA -->
     <div class="game">
       <div id="boardWrapper" class="board-wrapper">
         <div id="frame" class="frame">
           <div id="topBorder" class="border top"></div>
           <div id="leftBorder" class="border left"></div>
+
           <div id="board" class="board">
             <div class="grid"></div>
           </div>
+
           <div id="rightBorder" class="border right"></div>
           <div id="bottomBorder" class="border bottom"></div>
         </div>
       </div>
     </div>
 
-    <!-- Animation layer -->
+    <!-- CONFETTI LAYER -->
     <canvas id="confetti"></canvas>
 
-    <!-- Toast -->
+    <!-- TOAST -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <!-- How to Play Modal (plain-language copy) -->
-    <div id="howToPlayModal" class="modal-backdrop" aria-hidden="true">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="htpTitle" aria-describedby="htpBody">
+    <!-- SETTINGS + HELP MODAL -->
+    <div id="settingsModal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
         <header class="modal-header">
-          <h2 id="htpTitle" tabindex="-1">How to Play</h2>
-          <button id="howToPlayClose" class="modal-close" aria-label="Close">×</button>
+          <h2 id="settingsTitle">Settings</h2>
+          <button id="settingsClose" class="modal-close" aria-label="Close">×</button>
         </header>
-        <div id="htpBody" class="modal-body">
-          <p><strong>OBJECTIVE:</strong> REASSEMBLE THE BOARD USING THE LETTER TILES TO FIND THE CORRECT SOLUTION.</p>
 
-          <h3>GETTIN STARTED</h3>
+        <div class="modal-body">
+
+          <!-- SETTINGS -->
+          <h3>Game Settings</h3>
+
+          <label>
+            Theme
+            <select id="themeSelect">
+              <option value="dark">DARK</option>
+              <option value="light">LIGHT</option>
+              <option value="colorblind">CB</option>
+              <option value="bw">B/W</option>
+              <option value="high-contrast">HIGH CONTRAST</option>
+              <option value="desert">DESERT</option>
+              <option value="ice">ICE</option>
+              <option value="forest">FOREST</option>
+            </select>
+          </label>
+
+          <label>
+            Board Size
+            <select id="sizeSelect">
+              <option value="small">SMALL (8×8)</option>
+              <option value="medium">MEDIUM (11×11)</option>
+              <option value="large">LARGE (16×16)</option>
+            </select>
+          </label>
+
+          <label>
+            Difficulty
+            <select id="difficultySelect">
+              <option value="easy">EASY</option>
+              <option value="balanced">BALANCED</option>
+              <option value="hard">HARD</option>
+            </select>
+          </label>
+
+          <hr />
+
+          <!-- HELP -->
+          <h3>How to Play</h3>
+
+          <p><strong>OBJECTIVE:</strong> Reassemble the board using the outside letter tiles.</p>
+
           <ul>
-            <li>ALL OUTSIDE LETTER TILES MAKE UP ALL THE INSIDE WORDS.</li>
-            <li>CLICK A LETTER TO HIGHLIGHT THE TILE, CLICK AN AVAILABLE SLOT ON THE BOARD TO DROP IT.</li>
+            <li>Letters on the <strong>left or right</strong> border can be placed anywhere in that <em>row</em>.</li>
+            <li>Letters on the <strong>top or bottom</strong> border can be placed anywhere in that <em>column</em>.</li>
+            <li>Only playable cells accept letters.</li>
+            <li>Click a placed letter to send it back.</li>
+            <li>Use elimination until every letter fits.</li>
           </ul>
 
-          <h3>DESTINATION DIRECTION</h3>
-          <ul>
-            <li>LETTERS ON THE <strong>LEFT or RIGHT</strong> BORDER CAN GO INTO ANY AVAILABLE CELL ALONG ITS <em>ROW</em>.</li>
-            <li>LETTERS ON THE <strong>TOP or BOTTOM</strong> BORDER CAN GO INTO ANY AVAILABLE CELL ALONG ITS <em>COLUMN</em>.</li>
-            <li>USE THE PROCESS OF ELIMINATION TO FIGURE OUT WHICH TILE BELONGS TO WHICH AVAILABLE CELL.</li>
-          </ul>
+          <p><em>When everything locks in — you’ll know.</em></p>
 
-          <h3>CHANGE YOUR MIND?</h3>
-          <ul>
-            <li>CLICK A FILLED SQUARE TO SEND THAT LETTER BACK TO WHERE IT ONCE CAME.</li>
-            <li>MOVE LETTERS BACK AND FORTH UNTIL EVERY LETTER TILE IS USED.</li>
-          </ul>
-
-          <h3>WHEN YOU GOT IT</h3>
-          <ul>
-            <li>....</li>
-            <li>OH YOULL KNOW. <em>DONT WORRY</em> YOULL KNOW..</li>
-          </ul>
-
-          <h3>SETTINGS</h3>
-          <ul>
-            
-            <li><strong>SIZE:</strong> SMALL MEDIUM or LARGE. WHICHEVER PUZZLE TICKLES YOUR FANCY</li>
-            <li><strong>DIFFICULTY:</strong> MEH.. THIS IS YET TO BE DETERMINED.</li>
-          </ul>
-
-
-
-          <p><em>WERE DONE HERE.</em>GOOD LUCK!</p>
         </div>
       </div>
     </div>
 
+    <!-- APP -->
     <script type="module" src="./app.js"></script>
+
   </body>
 </html>

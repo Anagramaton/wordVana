@@ -1,0 +1,9 @@
+{
+  "name": "wordvana",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:puzzles": "node scripts/generate-puzzles.mjs --all --count 50",
+    "build:puzzles:large": "node scripts/generate-puzzles.mjs --size large --difficulty balanced --count 50"
+  }
+}

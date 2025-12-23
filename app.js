@@ -3,6 +3,7 @@ import { generateFeasiblePuzzle, MIN_WORD_LEN } from './generator.js';
 
 const DEV = true; // set false for production
 
+/* ===== DOM ===== */
 const wrapper = document.getElementById('boardWrapper');
 const frameEl = document.getElementById('frame');
 const boardEl = document.querySelector('#board .grid');
@@ -16,15 +17,33 @@ const toastEl = document.getElementById('toast');
 const themeSelect = document.getElementById('themeSelect');
 const difficultySelect = document.getElementById('difficultySelect');
 const sizeSelect = document.getElementById('sizeSelect');
+
+const settingsBtn = document.getElementById('settingsBtn');
+let settingsIdleTimer = null;
+
+function hideSettingsBtn() {
+  settingsBtn?.classList.add('hidden');
+}
+
+function showSettingsBtn() {
+  settingsBtn?.classList.remove('hidden');
+}
+
+function scheduleSettingsReturn(delay = 1200) {
+  clearTimeout(settingsIdleTimer);
+  settingsIdleTimer = setTimeout(showSettingsBtn, delay);
+}
+
+const settingsModal = document.getElementById('settingsModal');
+const settingsClose = document.getElementById('settingsClose');
+
+
 const confettiCanvas = document.getElementById('confetti');
 const ctx = confettiCanvas?.getContext('2d');
 
-/* Help modal elements */
-const helpBtn = document.getElementById('howToPlayBtn');
-const howToModal = document.getElementById('howToPlayModal');
-const howToClose = document.getElementById('howToPlayClose');
 
-/* ===== Audio: win fanfare with mobile-safe unlock and format fallback ===== */
+
+/* ===== Audio: mobile-safe unlock + format fallback ===== */
 function canPlay(type) {
   const a = document.createElement('audio');
   return !!a.canPlayType && a.canPlayType(type) !== '';
@@ -41,7 +60,7 @@ function unlockAudio() {
   if (audioReady) return;
   audioReady = true;
 
-  // Try to resume a WebAudio context (some Safari versions require this)
+  // Resume WebAudio context if needed (Safari)
   try {
     window.__audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
     if (window.__audioCtx.state === 'suspended') {
@@ -49,7 +68,7 @@ function unlockAudio() {
     }
   } catch {}
 
-  // Warm up the HTMLAudio element silently (muted) to satisfy autoplay policies
+  // Warm up HTMLAudio silently to satisfy autoplay policies
   winSound.muted = true;
   winSound.play()
     .then(() => {
@@ -58,7 +77,6 @@ function unlockAudio() {
       winSound.muted = false;
     })
     .catch(() => {
-      // If play fails, just unmute; it will succeed later during celebration click
       winSound.muted = false;
     });
 }
@@ -77,23 +95,21 @@ function resizeConfetti() {
 }
 window.addEventListener('resize', resizeConfetti);
 
-// Size presets: adjust counts here in code (no UI)
+
 const SIZE_PRESETS = {
   small:  { N: 8,  maxWordLen: 5,  wordCount: 7  },
-  medium: { N: 11, maxWordLen: 8, wordCount: 9 },
-  large:  { N: 16, maxWordLen: 11, wordCount: 10 }
+  medium: { N: 11, maxWordLen: 8,  wordCount: 10 },
+  large:  { N: 16, maxWordLen: 11, wordCount: 15 }
 };
 
-// Persisted size key
+// Persisted selections
 let sizeKey = localStorage.getItem('boardSize') || 'large';
-
-// Persisted difficulty
 let difficulty = (localStorage.getItem('puzzleDifficulty') || 'balanced');
 
 // Board size target (dynamic)
 let TARGET_N = SIZE_PRESETS[sizeKey].N;
 
-// Build dictionary per min/max
+/* ===== Dictionary ===== */
 function buildDictionary(minLen, maxLen) {
   return WORDS
     .map(w => w.trim())
@@ -102,7 +118,7 @@ function buildDictionary(minLen, maxLen) {
     .filter(w => w.length >= minLen && w.length <= maxLen);
 }
 
-// State
+/* ===== State ===== */
 let solutionLetters = new Map();
 let N = TARGET_N;
 let gridRef = [];
@@ -113,7 +129,70 @@ let slotEls = new Map();
 let tokens = new Map();
 let selectedTokenId = null;
 
-/* UI: Theme and Difficulty (size already exists) */
+/* ===== Offline pool state & loader ===== */
+let pool = null; // { meta, puzzles }
+function poolCursorKey() { return `poolCursor:${sizeKey}:${difficulty}`; }
+let poolCursor = Number(localStorage.getItem(poolCursorKey())) || 0;
+
+function toMap(entries) {
+  const m = new Map();
+  for (const [k, v] of entries) m.set(k, v);
+  return m;
+}
+
+async function loadPool() {
+  pool = null;
+  poolCursor = Number(localStorage.getItem(poolCursorKey())) || 0;
+
+  const url = `./puzzles/pool-${sizeKey}-${difficulty}.json`;
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json?.puzzles?.length) {
+      pool = json;
+      if (poolCursor >= pool.puzzles.length) {
+        poolCursor = 0;
+        localStorage.setItem(poolCursorKey(), String(poolCursor));
+      }
+      if (DEV) console.log('Loaded pool:', url, pool.meta);
+    }
+  } catch (e) {
+    if (DEV) console.warn('Pool not available at', url, e);
+    pool = null;
+  }
+}
+
+/* ===== UI: Theme/Size/Difficulty ===== */
+/* ===== Settings modal ===== */
+function openSettings() {
+  if (!settingsModal) return;
+  settingsModal.classList.add('open');
+  settingsModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSettings() {
+  if (!settingsModal) return;
+  settingsModal.classList.remove('open');
+  settingsModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+settingsBtn?.addEventListener('click', openSettings);
+settingsClose?.addEventListener('click', closeSettings);
+
+settingsModal?.addEventListener('click', (e) => {
+  if (e.target === settingsModal) closeSettings();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && settingsModal?.classList.contains('open')) {
+    closeSettings();
+  }
+});
+
+
 themeSelect?.addEventListener('change', () => {
   document.documentElement.setAttribute('data-theme', themeSelect.value);
   scheduleFitToViewport();
@@ -121,105 +200,98 @@ themeSelect?.addEventListener('change', () => {
 
 if (sizeSelect) {
   sizeSelect.value = sizeKey;
-  sizeSelect.addEventListener('change', () => {
+  sizeSelect.addEventListener('change', async () => {
     sizeKey = sizeSelect.value;
     localStorage.setItem('boardSize', sizeKey);
     TARGET_N = SIZE_PRESETS[sizeKey].N;
+    await loadPool();
     newPuzzle();
   });
 }
 
 if (difficultySelect) {
   difficultySelect.value = difficulty;
-  difficultySelect.addEventListener('change', () => {
+  difficultySelect.addEventListener('change', async () => {
     difficulty = difficultySelect.value;
     localStorage.setItem('puzzleDifficulty', difficulty);
+    await loadPool();
     newPuzzle();
   });
 }
 
-/* Help modal logic */
-function openHowToModal() {
-  if (!howToModal) return;
-  howToModal.classList.add('open');
-  howToModal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-  const title = howToModal.querySelector('#htpTitle');
-  title?.focus();
-  howToModal.addEventListener('click', backdropClose);
-  document.addEventListener('keydown', escClose);
-}
 
-function closeHowToModal() {
-  if (!howToModal) return;
-  howToModal.classList.remove('open');
-  howToModal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-  howToModal.removeEventListener('click', backdropClose);
-  document.removeEventListener('keydown', escClose);
-  helpBtn?.focus();
-}
 
-function backdropClose(e) {
-  if (e.target === howToModal) closeHowToModal();
-}
-function escClose(e) {
-  if (e.key === 'Escape') closeHowToModal();
-}
-
-helpBtn?.addEventListener('click', openHowToModal);
-howToClose?.addEventListener('click', closeHowToModal);
-
-// Build a new guaranteed-feasible puzzle
-function newPuzzle() {
+/* ===== New puzzle: prefer offline pool, fallback to live generator ===== */
+async function newPuzzle() {
   try {
+    document.body.style.cursor = 'progress';
+
     const preset = SIZE_PRESETS[sizeKey] ?? SIZE_PRESETS.large;
     const minWordLen = MIN_WORD_LEN; // always 4
     const maxWordLen = preset.maxWordLen;
     const wordCount  = preset.wordCount;
 
-    const DICT = buildDictionary(minWordLen, maxWordLen);
+    let out;
+    if (pool && pool.puzzles.length) {
+      const p = pool.puzzles[poolCursor];
+      // advance cursor for next time
+      poolCursor = (poolCursor + 1) % pool.puzzles.length;
+      localStorage.setItem(poolCursorKey(), String(poolCursor));
 
-    const raw = generatePuzzleWithinSizeGuaranteed(
-      DICT,
-      preset.N,
-      { difficulty, minWordLen, maxWordLen, wordCount }
-    );
-    const { grid, letters, slotAssignment: slots } = raw;
+      out = {
+        grid: p.grid,
+        letters: toMap(p.letters),
+        words: p.words,
+        slotAssignment: {
+          byCell: toMap(p.slotAssignment.byCell),
+          bySlot: toMap(p.slotAssignment.bySlot),
+          slots: p.slotAssignment.slots
+        }
+      };
+    } else {
+      // Live generation fallback
+      const DICT = buildDictionary(minWordLen, maxWordLen);
+      const raw = generatePuzzleWithinSizeGuaranteed(
+        DICT,
+        preset.N,
+        { difficulty, minWordLen, maxWordLen, wordCount }
+      );
 
-    const { grid: paddedGrid, letters: shiftedLetters, padTop, padLeft } =
-      padGridToSize(grid, letters, preset.N);
+      // Center-pad if generator produced a smaller grid
+      if (raw.grid.length < preset.N) {
+        const { grid: paddedGrid, letters: shiftedLetters, padTop, padLeft } =
+          padGridToSize(raw.grid, raw.letters, preset.N);
+        const shiftedAssignment = shiftSlotAssignmentKeys(raw.slotAssignment, padTop, padLeft);
+        out = { grid: paddedGrid, letters: shiftedLetters, words: raw.words, slotAssignment: shiftedAssignment };
+      } else {
+        out = raw;
+      }
+    }
 
-    const shiftedAssignment = shiftSlotAssignmentKeys(slots, padTop, padLeft);
-
-    solutionLetters = shiftedLetters;
-    gridRef = paddedGrid;
+    solutionLetters = out.letters;
+    gridRef = out.grid;
     N = preset.N;
     TARGET_N = preset.N;
-    slotAssignment = shiftedAssignment;
+    slotAssignment = out.slotAssignment;
 
     if (DEV) {
-      console.log('Solution placement (cell -> letter):',
-        Array.from(solutionLetters.entries()).sort());
-      console.log('Outside slot assignment (slotId -> cell):',
-        Array.from(slotAssignment.bySlot.entries()).sort());
+      console.log('Solution placement (cell -> letter):', Array.from(solutionLetters.entries()).sort());
+      console.log('Outside slot assignment (slotId -> cell):', Array.from(slotAssignment.bySlot.entries()).sort());
     }
 
     renderFrame();
-    renderBoard(paddedGrid);
+    renderBoard(out.grid);
     renderOutsideSlots(N);
-    renderTokensFromAssignment(shiftedLetters, shiftedAssignment);
-
+    renderTokensFromAssignment(out.letters, out.slotAssignment);
     scheduleFitToViewport();
-
-    // Removed "new puzzle" toast per requirement: only show toast on full completion.
   } catch (e) {
     console.error(e);
-    // Removed error toast per requirement.
+  } finally {
+    document.body.style.cursor = '';
   }
 }
 
-/** Guaranteed: keeps generating until raw grid size <= targetN and is feasible */
+/** Generator guard: keeps trying until size fits */
 function generatePuzzleWithinSizeGuaranteed(dictionary, targetN, options = {}) {
   for (;;) {
     const out = generateFeasiblePuzzle(dictionary, options);
@@ -248,10 +320,7 @@ function padGridToSize(grid, letters, targetN) {
   return { grid: newGrid, letters: newLetters, padTop, padLeft };
 }
 
-/**
- * Adjust slotAssignment indices/ids and byCell keys by the pad offsets,
- * and rebuild the slots list so token indices align with the padded board.
- */
+/** Shift slotAssignment indices/ids by pad offsets */
 function shiftSlotAssignmentKeys(assignment, padTop, padLeft) {
   if (!assignment) return null;
 
@@ -281,6 +350,7 @@ function shiftSlotAssignmentKeys(assignment, padTop, padLeft) {
   return { byCell, bySlot, slots };
 }
 
+/* ===== Renderers ===== */
 function renderFrame() {
   frameEl.style.setProperty('--n', N);
   document.documentElement.style.setProperty('--n', N);
@@ -433,8 +503,9 @@ function renderTokensFromAssignment(letters, assignment) {
 
     const slotEl = slotEls.get(info.id);
     if (slotEl) {
-      slotEl.classList.remove('occupied');
-      slotEl.classList.add('empty');
+      // Occupied when a token is present
+      slotEl.classList.remove('empty');
+      slotEl.classList.add('occupied');
       slotEl.appendChild(tokenEl);
     }
 
@@ -452,6 +523,8 @@ function renderTokensFromAssignment(letters, assignment) {
 }
 
 function selectToken(tokenId) {
+  hideSettingsBtn();
+  scheduleSettingsReturn();
   if (selectedTokenId && tokens.has(selectedTokenId)) {
     tokens.get(selectedTokenId).el.classList.remove('selected');
   }
@@ -466,6 +539,8 @@ function selectToken(tokenId) {
 }
 
 function onBoardCellClick(e) {
+  hideSettingsBtn();
+  scheduleSettingsReturn();
   const cell = e.currentTarget;
   const r = Number(cell.dataset.r);
   const c = Number(cell.dataset.c);
@@ -474,6 +549,7 @@ function onBoardCellClick(e) {
 
   const existingTokenId = cell.dataset.tokenId || null;
 
+  // Clicking a filled cell returns its token to the slot
   if (existingTokenId) {
     const tok = tokens.get(existingTokenId);
     if (!tok) return;
@@ -483,8 +559,9 @@ function onBoardCellClick(e) {
     cell.setAttribute('aria-label', `Row ${r + 1}, Column ${c + 1}: empty`);
     const slotEl = slotEls.get(tok.slotId);
     if (slotEl) {
-      slotEl.classList.remove('occupied');
-      slotEl.classList.add('empty');
+      // Slot becomes occupied again
+      slotEl.classList.remove('empty');
+      slotEl.classList.add('occupied');
       slotEl.appendChild(tok.el);
     }
     tok.placed = false;
@@ -496,6 +573,7 @@ function onBoardCellClick(e) {
     return;
   }
 
+  // Need a selected token
   if (!selectedTokenId) return;
   const tok = tokens.get(selectedTokenId);
   if (!tok || tok.placed) return;
@@ -523,6 +601,7 @@ function onBoardCellClick(e) {
     cell.setAttribute('aria-label', `Row ${r + 1}, Column ${c + 1}: ${tok.letter}`);
   }
 
+  // Remove token from its slot; slot becomes empty
   if (tok.el.parentElement) {
     tok.el.parentElement.classList.remove('occupied');
     tok.el.parentElement.classList.add('empty');
@@ -555,7 +634,7 @@ function validateCompletion() {
     const actual = (cell?.textContent || '').toUpperCase();
     if (actual !== expected) {
       if (DEV) console.log('Mismatch at', cellKey, 'expected:', expected, 'got:', actual);
-      return; // no feedback until completely correct
+      return; // only celebrate on perfect completion
     }
   }
   showToast('Solved!');
@@ -620,6 +699,7 @@ function showToast(msg) {
   setTimeout(() => toastEl.classList.remove('show'), 1800);
 }
 
+/* ===== Sizing ===== */
 function fitToViewportByCellSize() {
   if (!wrapper) return;
   const rootStyles = getComputedStyle(document.documentElement);
@@ -636,7 +716,13 @@ function fitToViewportByCellSize() {
   document.documentElement.style.setProperty('--cell-size', `${safeCell}px`);
 }
 
-/* Enhanced confetti: multi-burst + rain, mixed shapes and theme colors */
+function scheduleFitToViewport() {
+  requestAnimationFrame(fitToViewportByCellSize);
+}
+
+window.addEventListener('resize', scheduleFitToViewport);
+
+/* ===== Enhanced confetti engine ===== */
 function launchConfetti({
   mode = 'burst',           // 'burst' | 'multiBurst'
   bursts = 3,               // number of bursts (multiBurst)
@@ -782,13 +868,7 @@ function launchConfetti({
   }
 }
 
-function scheduleFitToViewport() {
-  requestAnimationFrame(fitToViewportByCellSize);
-}
-
-window.addEventListener('resize', scheduleFitToViewport);
-
-/* Optional: click empty space to clear selection/highlights */
+/* ===== Click outside to clear selection/highlights ===== */
 document.addEventListener('click', (evt) => {
   const withinToken = evt.target.closest?.('.token');
   const withinCell = evt.target.closest?.('.cell');
@@ -801,5 +881,6 @@ document.addEventListener('click', (evt) => {
   }
 });
 
-// Initial load
+/* ===== Startup ===== */
+await loadPool(); // try to load precomputed puzzles first
 newPuzzle();
