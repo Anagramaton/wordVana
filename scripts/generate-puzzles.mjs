@@ -157,6 +157,7 @@ function generateBatch(sizeKey, difficulty, count) {
   const maxWordLen = preset.maxWordLen;
   const wordCount  = preset.wordCount;
   const DICT = buildDictionary(minWordLen, maxWordLen);
+  
 
   const out = [];
   for (let i = 0; i < count; i++) {

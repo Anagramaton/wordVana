@@ -33,7 +33,7 @@
   --empty-shadow: 0 4px 12px rgba(0,0,0,.25);
   --empty-pattern: rgba(255,255,255,.06); /* subtle dots overlay */
 
-  /* Token and slot */
+  /* Token (in-board) and slot defaults */
   --token-bg-1: #0f1f34;
   --token-bg-2: #0b1730;
   --token-border: #203a61;
@@ -43,6 +43,13 @@
   --slot-border: #2a3d5e;
   --slot-bg-1: rgba(255,255,255,.05);
   --slot-bg-2: rgba(255,255,255,.03);
+
+  /* Outside-token specific fallbacks (overridden per theme) */
+  --outside-token-bg-1: #2b1b5f;
+  --outside-token-bg-2: #3a1660;
+  --outside-token-border: rgba(155,124,255,.95);
+  --outside-token-text: #ffffff;
+  --outside-slot-inset: 4px;
 
   /* Accents */
   --accent: #00c2ff;
@@ -63,10 +70,15 @@
   --path-2: #f472b6; /* pink */
   --path-3: #60a5fa; /* blue */
   --path-4: #22d3ee; /* light cyan */
+
+  /* Border chase brightness multipliers (tunable per theme) */
+  --border-brightness: 1;
+  --border-glow-alpha: 0.55;
 }
 
 /* ============================================================
-   Theme palettes – broadened hue ranges per theme
+   Theme palettes – each theme includes polished outside-token
+   and slot tuning for a rich, distinct look.
    ============================================================ */
 
 /* Neon Night (Dark): cool blues + magenta accents */
@@ -100,6 +112,13 @@
   --slot-bg-1: rgba(74,137,255,.12);
   --slot-bg-2: rgba(0,224,255,.08);
 
+  /* Polished outside-token (dark): jewel purple core + neon rim */
+  --outside-token-bg-1: #24143f;
+  --outside-token-bg-2: #3c2160;
+  --outside-token-border: #66f0ff; /* neon cyan rim */
+  --outside-token-text: #f8fbff;
+  --outside-slot-inset: 4px;
+
   /* Accents: cyan + pink */
   --accent: #00e0ff;
   --accent-2: #ff6bd6;
@@ -117,6 +136,10 @@
   --path-2: #ff6bd6;
   --path-3: #86f3ff;
   --path-4: #7aa8ff;
+
+  /* stronger border lighting for dark theme */
+  --border-brightness: 1.35;
+  --border-glow-alpha: 0.78;
 }
 
 /* Porcelain Paper (Light): soft multi-pastels */
@@ -146,6 +169,13 @@
   --slot-bg-1: rgba(11,108,255,.14);
   --slot-bg-2: rgba(167,139,250,.10);
 
+  /* Outside-token (light): soft cream core, warm pink rim */
+  --outside-token-bg-1: #fffafc;
+  --outside-token-bg-2: #fff2f8;
+  --outside-token-border: #ff7ab6;
+  --outside-token-text: #101423;
+  --outside-slot-inset: 4px;
+
   --accent: #0b6cff;
   --accent-2: #ff7ab6; /* pink secondary */
   --glow: 0 0 0 2px rgba(11,108,255,.35), 0 0 24px rgba(11,108,255,.25);
@@ -161,6 +191,9 @@
   --path-2: #ff7ab6;
   --path-3: #7cd3ff;
   --path-4: #8fe3c0; /* mint */
+
+  --border-brightness: 1.1;
+  --border-glow-alpha: 0.7;
 }
 
 /* Tritanopia-friendly (Colorblind): blue vs amber */
@@ -190,6 +223,13 @@
   --slot-bg-1: rgba(255,183,3,.20);
   --slot-bg-2: rgba(255,183,3,.10);
 
+  /* Outside-token (colorblind): strong blue core, amber rim for equality */
+  --outside-token-bg-1: #07284a;
+  --outside-token-bg-2: #0b3c6f;
+  --outside-token-border: #ffb703;
+  --outside-token-text: #f8fbff;
+  --outside-slot-inset: 4px;
+
   --accent: #ffb703;  /* strong amber */
   --accent-2: #3b78ff; /* blue secondary */
   --glow: 0 0 0 2px rgba(255,183,3,.6), 0 0 26px rgba(255,183,3,.35);
@@ -205,6 +245,9 @@
   --path-2: #86a8ff;
   --path-3: #ffd166;
   --path-4: #2856a4;
+
+  --border-brightness: 1.15;
+  --border-glow-alpha: 0.72;
 }
 
 /* Pure Mono (B/W) – ultra clear distinction */
@@ -234,6 +277,13 @@
   --slot-bg-1: rgba(255,255,255,.18);
   --slot-bg-2: rgba(255,255,255,.10);
 
+  /* Outside-token (bw): inversion-friendly high-contrast ring */
+  --outside-token-bg-1: #111111;
+  --outside-token-bg-2: #222222;
+  --outside-token-border: #ffffff;
+  --outside-token-text: #ffffff;
+  --outside-slot-inset: 4px;
+
   --accent: #ffffff;
   --accent-2: #f2f2f2;
   --glow: 0 0 0 2px rgba(255,255,255,.45), 0 0 20px rgba(255,255,255,.30);
@@ -249,6 +299,9 @@
   --path-2: #ffffff;
   --path-3: #8a8a8a;
   --path-4: #ffffff;
+
+  --border-brightness: 1.2;
+  --border-glow-alpha: 0.9;
 }
 
 /* High Contrast (Accessibility) – maximum clarity */
@@ -278,6 +331,13 @@
   --slot-bg-1: rgba(255,251,0,.35);
   --slot-bg-2: rgba(255,251,0,.20);
 
+  /* Outside-token (high-contrast): black core + vivid yellow rim */
+  --outside-token-bg-1: #000000;
+  --outside-token-bg-2: #000000;
+  --outside-token-border: #fffb00;
+  --outside-token-text: #ffffff;
+  --outside-slot-inset: 4px;
+
   --accent: #00e5ff;
   --accent-2: #fffb00;
   --glow: 0 0 0 2px rgba(0,229,255,.6), 0 0 28px rgba(0,229,255,.45);
@@ -293,6 +353,9 @@
   --path-2: #ffffff;
   --path-3: #fffb00;
   --path-4: #ffffff;
+
+  --border-brightness: 1.5;
+  --border-glow-alpha: 1;
 }
 
 /* Desert Mirage – oranges, yellows, reds */
@@ -326,6 +389,13 @@
   --slot-bg-1: rgba(255,159,28,.24);
   --slot-bg-2: rgba(253,224,71,.18);
 
+  /* Outside-token (desert): rich terracotta core + soft gold rim */
+  --outside-token-bg-1: #7a351f;
+  --outside-token-bg-2: #b34a27;
+  --outside-token-border: #ffd8a8;
+  --outside-token-text: #fff6ec;
+  --outside-slot-inset: 4px;
+
   --accent: #ff9f1c;   /* orange */
   --accent-2: #ef4444; /* red secondary */
   --glow: 0 0 0 2px rgba(255,159,28,.5), 0 0 28px rgba(255,159,28,.35);
@@ -341,6 +411,9 @@
   --path-2: #ef4444; /* red */
   --path-3: #fb7185; /* coral */
   --path-4: #f59e0b; /* amber */
+
+  --border-brightness: 1.25;
+  --border-glow-alpha: 0.75;
 }
 
 /* Ice Cavern – blues, purples, pinks */
@@ -374,6 +447,13 @@
   --slot-bg-1: rgba(124,211,255,.24);
   --slot-bg-2: rgba(167,139,250,.16);
 
+  /* Outside-token (ice): frosted lilac core with icy cyan rim */
+  --outside-token-bg-1: #573aa8;
+  --outside-token-bg-2: #ff7ab6;
+  --outside-token-border: #b9ecff;
+  --outside-token-text: #f6f9ff;
+  --outside-slot-inset: 4px;
+
   --accent: #7cd3ff;   /* cyan */
   --accent-2: #f472b6; /* pink secondary */
   --glow: 0 0 0 2px rgba(124,211,255,.55), 0 0 28px rgba(124,211,255,.35);
@@ -389,6 +469,9 @@
   --path-2: #f472b6; /* pink */
   --path-3: #60a5fa; /* blue */
   --path-4: #22d3ee; /* cyan */
+
+  --border-brightness: 1.2;
+  --border-glow-alpha: 0.7;
 }
 
 /* Forest Canopy – greens, yellows, orange */
@@ -422,6 +505,13 @@
   --slot-bg-1: rgba(149,213,178,.24);
   --slot-bg-2: rgba(245,158,11,.16);
 
+  /* Outside-token (forest): deep emerald core + warm amber rim */
+  --outside-token-bg-1: #0f3f2f;
+  --outside-token-bg-2: #2b7a54;
+  --outside-token-border: #ffd79a;
+  --outside-token-text: #eaf7ee;
+  --outside-slot-inset: 4px;
+
   --accent: #95d5b2;   /* mint green */
   --accent-2: #f59e0b; /* amber secondary */
   --glow: 0 0 0 2px rgba(149,213,178,.55), 0 0 28px rgba(149,213,178,.35);
@@ -437,6 +527,9 @@
   --path-2: #f59e0b; /* amber */
   --path-3: #10b981; /* teal-green */
   --path-4: #65a30d; /* olive */
+
+  --border-brightness: 1.18;
+  --border-glow-alpha: 0.7;
 }
 
 /* ============================================================
@@ -600,19 +693,108 @@ body {
   align-items: center;
 }
 
-/* Outside slot + token */
+/* ------------------------------------------------------------
+   OUTSIDE SLOTS & OUTSIDE TOKENS (styled for strong presence)
+   ------------------------------------------------------------ */
+
+/* Outside slot (the receptacle) */
 .slot {
   width: var(--cell-size);
   height: var(--cell-size);
   border-radius: var(--radius);
-  border: 1px dashed var(--slot-border);
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--slot-bg-1), var(--slot-bg-2));
+
+  /* clearer, thicker border so slots read as "containers" */
+  border: 2px solid var(--slot-border);
+
+  /* subtle glass / inset feel so slot reads different from fillable cells */
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--slot-bg-1), transparent 6%),
+    color-mix(in srgb, var(--slot-bg-2), transparent 6%)
+  );
+  padding: var(--outside-slot-inset);
+  transition: background .15s ease, border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--slot-border), transparent 85%);
 }
-.slot.empty { opacity: .85; }
+.slot.empty { opacity: .98; }
 .slot.occupied { opacity: 1; }
 
+/* Border-lit state (the chase animation uses this)
+   — made much brighter and pulsing for a "marquee" effect */
+.slot.border-lit {
+  box-shadow:
+    0 10px 26px color-mix(in srgb, var(--slot-border), transparent 50%),
+    0 0 30px color-mix(in srgb, var(--accent), transparent calc(40% / var(--border-brightness))),
+    0 0 80px color-mix(in srgb, var(--accent-2), transparent calc(60% / var(--border-brightness)));
+  transform: translateY(-4px) scale(1.04);
+  border-color: color-mix(in srgb, var(--accent-2), transparent 2%);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--slot-bg-1), var(--accent) calc(6% * var(--border-brightness))),
+    color-mix(in srgb, var(--slot-bg-2), var(--accent-2) calc(6% * var(--border-brightness)))
+  );
+  transition: box-shadow .10s ease, transform .10s ease, border-color .10s ease;
+  filter: saturate(1.15) brightness(calc(1 + (0.18 * var(--border-brightness))));
+}
+
+/* Subtle layered tail classes to allow a softer gradient for the chase */
+.slot.border-lit-1 { filter: saturate(1.05) brightness(1.03); opacity: 0.95; }
+.slot.border-lit-2 { filter: saturate(1.1) brightness(1.05); opacity: 0.85; }
+.slot.border-lit-3 { filter: saturate(1.15) brightness(1.08); opacity: 0.7; transform: translateY(-2px) scale(1.01); }
+
+/* Solution-lit state (opposite-direction chase on solution slots)
+   distinct color, slightly smaller glow so it reads as a separate layer */
+.slot.solution-lit {
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--slot-border), transparent 60%),
+    0 0 16px color-mix(in srgb, var(--path-2), transparent 30%),
+    0 0 36px color-mix(in srgb, var(--path-0), transparent 40%);
+  transform: translateY(-3px) scale(1.03);
+  border-color: color-mix(in srgb, var(--path-0), transparent 8%);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--slot-bg-1), var(--path-0) 4%),
+    color-mix(in srgb, var(--slot-bg-2), var(--path-2) 4%)
+  );
+  transition: box-shadow .12s ease, transform .12s ease, border-color .12s ease;
+}
+.slot.solution-lit-1 { opacity: 0.95; filter: saturate(1.05); }
+.slot.solution-lit-2 { opacity: 0.85; filter: saturate(1.08) brightness(1.04); }
+
+/* Outside token (the one sitting in the slot) */
+.slot .token {
+  width: calc(var(--cell-size) * 0.72);
+  height: calc(var(--cell-size) * 0.72);
+  border-radius: 999px;
+  background: linear-gradient(145deg, var(--outside-token-bg-1), var(--outside-token-bg-2));
+  color: var(--outside-token-text);
+  border: 2px solid var(--outside-token-border);
+  display: grid;
+  place-items: center;
+  font-weight: var(--glyph-weight);
+  font-size: clamp(calc(var(--min-token) * 0.85), calc(var(--cell-size) * (var(--token-scale) * 0.78)), calc(var(--max-token) * 0.85));
+  line-height: 1;
+  letter-spacing: var(--glyph-tracking);
+  text-shadow: var(--glyph-shadow);
+  user-select: none;
+  cursor: pointer;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--slot-border), transparent 70%);
+  transition: transform .12s ease, box-shadow .14s ease, outline-color .12s ease, filter .12s ease;
+  transform-origin: center;
+}
+/* Hover/press for outside token */
+.slot .token:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--outside-token-border), transparent 55%);
+}
+/* Selected outside token */
+.slot .token.selected {
+  outline: 3px solid color-mix(in srgb, var(--accent), transparent 10%);
+  box-shadow: var(--glow);
+  transform: translateY(-4px) scale(1.04);
+}
+
+/* Keep original (in-board) token shape/rules for when tokens are rendered outside the slot area
+   or used as full-size interactive elements — the .slot .token selector above overrides this. */
 .token {
   width: calc(var(--cell-size) - 2px);
   height: calc(var(--cell-size) - 2px);
@@ -668,8 +850,6 @@ body {
   z-index: 2000;
 }
 
-
-
 /* Bottom-corner ellipsis (settings entry point) */
 .ellipsis-btn {
   position: fixed;
@@ -705,7 +885,6 @@ body {
   opacity: 0;
   pointer-events: none;
 }
-
 
 /* Modal */
 .modal-backdrop {
@@ -786,7 +965,6 @@ body {
   margin: 10px 0;
 }
 
-
 /* ============================================================
    Rich multi-color path highlight system
    ============================================================ */
@@ -828,10 +1006,9 @@ body {
 .cell .char.placed { animation: char-pop .12s ease; }
 
 /* ============================================================
-   Celebration mode (activated via html.celebrating)
+   Celebration mode
    ============================================================ */
 
-/* Global shimmer + glow */
 html.celebrating .frame {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent), transparent 40%), var(--frame-shadow);
   animation: frame-pulse 1.4s ease-in-out 3 alternate;
@@ -841,7 +1018,6 @@ html.celebrating .frame {
   100% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-2), transparent 45%), var(--frame-shadow); }
 }
 
-/* Board shimmer overlay */
 html.celebrating .board::after {
   content: "";
   position: absolute;
@@ -863,7 +1039,6 @@ html.celebrating .board::after {
   100% { opacity: 0; }
 }
 
-/* Letters: animated gradient text fill */
 .cell .char.celebrate-text {
   background: linear-gradient(90deg, var(--path-0), var(--path-2), var(--path-4));
   background-size: 200% 100%;
@@ -879,7 +1054,6 @@ html.celebrating .board::after {
   100% { background-position: 0% 50%; }
 }
 
-/* Playable tiles: extra glow */
 html.celebrating .cell.fillable {
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--accent), transparent 35%),
@@ -887,7 +1061,6 @@ html.celebrating .cell.fillable {
     var(--fillable-shadow);
 }
 
-/* Tokens: bounce + glow */
 html.celebrating .token {
   animation: token-bounce 480ms ease-in-out 2;
   box-shadow:
@@ -901,9 +1074,7 @@ html.celebrating .token {
   100% { transform: translateY(0) scale(1); }
 }
 
-/* Slots brighten briefly */
 html.celebrating .slot {
   border-color: color-mix(in srgb, var(--accent-2), transparent 35%);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent), transparent 40%);
 }
-

@@ -37,11 +37,8 @@ function scheduleSettingsReturn(delay = 1200) {
 const settingsModal = document.getElementById('settingsModal');
 const settingsClose = document.getElementById('settingsClose');
 
-
 const confettiCanvas = document.getElementById('confetti');
 const ctx = confettiCanvas?.getContext('2d');
-
-
 
 /* ===== Audio: mobile-safe unlock + format fallback ===== */
 function canPlay(type) {
@@ -87,11 +84,17 @@ document.addEventListener('keydown', unlockAudio, { once: true });
 /* ===== Confetti ===== */
 let confettiParticles = [];
 let confettiRunning = false;
+let confettiTicker = null; // animation handle for our fixed-step loop
+let confettiOptionsGlobal = null;
 
 function resizeConfetti() {
   if (!confettiCanvas) return;
-  confettiCanvas.width = window.innerWidth;
-  confettiCanvas.height = window.innerHeight;
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  confettiCanvas.width = Math.floor(window.innerWidth * dpr);
+  confettiCanvas.height = Math.floor(window.innerHeight * dpr);
+  confettiCanvas.style.width = `${window.innerWidth}px`;
+  confettiCanvas.style.height = `${window.innerHeight}px`;
+  if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 window.addEventListener('resize', resizeConfetti);
 
@@ -653,7 +656,445 @@ function getThemePathPalette() {
   return ['#68e3ff', '#a78bfa', '#f472b6', '#60a5fa', '#22d3ee'];
 }
 
-function startCelebration() {
+/* ===== Border chase animation (lights moving around slots) ===== */
+let borderChaseRunning = false;
+let borderChaseHandle = null;
+
+function buildBorderSequence(n) {
+  const seq = [];
+  // top left -> top right
+  for (let c = 0; c < n; c++) seq.push(`T:${c}`);
+  // right top -> right bottom
+  for (let r = 0; r < n; r++) seq.push(`R:${r}`);
+  // bottom right -> bottom left
+  for (let c = n - 1; c >= 0; c--) seq.push(`B:${c}`);
+  // left bottom -> left top
+  for (let r = n - 1; r >= 0; r--) seq.push(`L:${r}`);
+  return seq;
+}
+
+/**
+ * startBorderChase:
+ * - speedMs: ms per step
+ * - tail: tail length for gradient
+ * - laps: number of laps to run (2 requested)
+ * - returns a Promise that resolves when chase completes
+ */
+function startBorderChase({ speedMs = 90, tail = 6, laps = 2 } = {}) {
+  if (borderChaseRunning) return Promise.resolve();
+  borderChaseRunning = true;
+  const seq = buildBorderSequence(N);
+  let idx = 0;
+  const total = seq.length;
+  const totalSteps = total * laps;
+  let stepsTaken = 0;
+
+  // clear any previous class
+  slotEls.forEach(el => el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3'));
+
+  return new Promise((resolve) => {
+    const step = () => {
+      // clear previous lit classes (we'll add for current tail)
+      slotEls.forEach(el => {
+        el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3');
+      });
+
+      for (let t = 0; t < tail; t++) {
+        const pos = (idx - t + total) % total;
+        const id = seq[pos];
+        const el = slotEls.get(id);
+        if (!el) continue;
+        el.classList.add('border-lit');
+        if (t === 1) el.classList.add('border-lit-1');
+        if (t === 2) el.classList.add('border-lit-2');
+        if (t >= 3) el.classList.add('border-lit-3');
+      }
+
+      idx = (idx + 1) % total;
+      stepsTaken++;
+
+      if (stepsTaken >= totalSteps) {
+        // leave final position lit briefly, then resolve & clear
+        setTimeout(() => {
+          borderChaseRunning = false;
+          slotEls.forEach(el => el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3'));
+          resolve();
+        }, 220);
+      }
+    };
+
+    // performance-based scheduler (reduce jitter) with accumulator
+    let last = performance.now();
+    let accumulator = 0;
+
+    function tick(now) {
+      if (!borderChaseRunning) return;
+      const dt = now - last;
+      last = now;
+      accumulator += dt;
+      while (accumulator >= speedMs) {
+        step();
+        accumulator -= speedMs;
+      }
+      borderChaseHandle = requestAnimationFrame(tick);
+      // If we're finished, the promise resolution in step will cancel via borderChaseRunning=false
+      if (!borderChaseRunning && borderChaseHandle) {
+        cancelAnimationFrame(borderChaseHandle);
+        borderChaseHandle = null;
+      }
+    }
+    borderChaseHandle = requestAnimationFrame(tick);
+  });
+}
+
+function stopBorderChase() {
+  if (!borderChaseRunning) return;
+  borderChaseRunning = false;
+  if (borderChaseHandle) {
+    cancelAnimationFrame(borderChaseHandle);
+    borderChaseHandle = null;
+  }
+  slotEls.forEach(el => {
+    el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3');
+  });
+}
+
+/* ===== Solution-chase: move a lit "pulse" around only solution slots, opposite direction ===== */
+let solutionChaseRunning = false;
+let solutionChaseHandle = null;
+
+function buildSolutionSequence() {
+  // Use slotAssignment.slots order (which is top->right->bottom->left like buildBorderSequence)
+  // but only include those slots that actually have a solution mapping (i.e., tokens/letters)
+  if (!slotAssignment || !slotAssignment.slots) return [];
+  const seq = slotAssignment.slots.map(s => `${s.side}:${s.index}`).filter(id => slotEls.has(id) && slotAssignment.bySlot.has(id));
+  return seq;
+}
+
+/**
+ * startSolutionChase:
+ * - runs in opposite direction to border (so we reverse sequence)
+ * - speedMs, tail, laps same semantics
+ * - returns a Promise that resolves when done
+ */
+function startSolutionChase({ speedMs = 90, tail = 4, laps = 2 } = {}) {
+  if (solutionChaseRunning) return Promise.resolve();
+  const seqRaw = buildSolutionSequence();
+  if (!seqRaw.length) return Promise.resolve();
+  const seq = seqRaw.slice().reverse(); // opposite direction
+  solutionChaseRunning = true;
+  let idx = 0;
+  const total = seq.length;
+  const totalSteps = total * laps;
+  let stepsTaken = 0;
+
+  // clear any previous class
+  slotEls.forEach(el => el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2'));
+
+  return new Promise((resolve) => {
+    const step = () => {
+      // clear
+      slotEls.forEach(el => {
+        el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2');
+      });
+
+      for (let t = 0; t < tail; t++) {
+        const pos = (idx - t + total) % total;
+        const id = seq[pos];
+        const el = slotEls.get(id);
+        if (!el) continue;
+        el.classList.add('solution-lit');
+        if (t === 1) el.classList.add('solution-lit-1');
+        if (t === 2) el.classList.add('solution-lit-2');
+      }
+
+      idx = (idx + 1) % total;
+      stepsTaken++;
+
+      if (stepsTaken >= totalSteps) {
+        setTimeout(() => {
+          solutionChaseRunning = false;
+          slotEls.forEach(el => el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2'));
+          resolve();
+        }, 220);
+      }
+    };
+
+    // performance scheduler
+    let last = performance.now();
+    let accumulator = 0;
+
+    function tick(now) {
+      if (!solutionChaseRunning) return;
+      const dt = now - last;
+      last = now;
+      accumulator += dt;
+      while (accumulator >= speedMs) {
+        step();
+        accumulator -= speedMs;
+      }
+      solutionChaseHandle = requestAnimationFrame(tick);
+      if (!solutionChaseRunning && solutionChaseHandle) {
+        cancelAnimationFrame(solutionChaseHandle);
+        solutionChaseHandle = null;
+      }
+    }
+    solutionChaseHandle = requestAnimationFrame(tick);
+  });
+}
+
+function stopSolutionChase() {
+  if (!solutionChaseRunning) return;
+  solutionChaseRunning = false;
+  if (solutionChaseHandle) {
+    cancelAnimationFrame(solutionChaseHandle);
+    solutionChaseHandle = null;
+  }
+  slotEls.forEach(el => {
+    el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2');
+  });
+}
+
+/* ===== Improved confetti engine (fixed-timestep physics, smoother rendering, staggered emission) ===== */
+
+/*
+  Key improvements to reduce the initial "pop" lag:
+  - Spread particle creation across a few animation frames (batch emission)
+  - Limit synchronous work per frame
+  - Fixed timestep physics to avoid jitter
+  - DPR scaling for crispness
+*/
+
+function launchConfetti({
+  mode = 'burst',           // 'burst' | 'multiBurst'
+  bursts = 3,               // number of bursts (multiBurst)
+  countPerBurst = 220,      // particles per burst
+  rainTailMs = 1200,        // spawn additional particles for this long
+  duration = 4200,
+  gravity = 0.45,
+  spread = Math.PI * 1.1,
+  drag = 0.995,
+  palette = ['#68e3ff', '#a78bfa', '#f472b6', '#60a5fa', '#22d3ee'],
+  mixShapes = true          // rect, circle, triangle
+} = {}) {
+  resizeConfetti();
+  confettiParticles = [];
+  confettiRunning = true;
+  confettiOptionsGlobal = { gravity, drag, duration };
+
+  // Canvas logical size (CSS pixels)
+  const W = confettiCanvas.width / (window.devicePixelRatio || 1);
+  const H = confettiCanvas.height / (window.devicePixelRatio || 1);
+
+  const centers = mode === 'multiBurst'
+    ? [
+        [W * 0.18, H * 0.35],
+        [W * 0.5, H * 0.35],
+        [W * 0.82, H * 0.35],
+        [W * 0.5, H * 0.18]
+      ].slice(0, bursts)
+    : [[W / 2, H * 0.4]];
+
+  // We'll spawn bursts but stagger particle creation in small batches per burst
+  for (const [cx, cy] of centers) {
+    spawnBurst({ cx, cy, count: countPerBurst, spread, palette, mixShapes, gravity });
+  }
+
+  // Optional rain tail (small additional emissions from top)
+  const rainStart = performance.now();
+  const rain = () => {
+    const now = performance.now();
+    if (now - rainStart > rainTailMs) return;
+    spawnBurst({
+      cx: Math.random() * W,
+      cy: -8,
+      count: Math.floor(countPerBurst * 0.18),
+      spread: Math.PI * 0.5,
+      palette,
+      mixShapes,
+      downOnly: true,
+      gravity
+    });
+    setTimeout(rain, 140);
+  };
+  if (rainTailMs > 0) rain();
+
+  // Fixed timestep loop
+  const FIXED_DT = 16.6667; // ms ~ 60fps
+  let accumulator = 0;
+  let lastTime = performance.now();
+
+  function updatePhysics(dt) {
+    const dtScale = dt / 16.6667;
+    for (let i = confettiParticles.length - 1; i >= 0; i--) {
+      const p = confettiParticles[i];
+      // Integrate velocity
+      p.vy += (gravity * (Math.random() * 0.02 + 0.99)) * dtScale; // slight per-particle variance
+      p.vx *= p.drag;
+      p.vy *= p.drag;
+
+      p.x += p.vx * dtScale;
+      p.y += p.vy * dtScale;
+
+      // rotation
+      p.rot += p.vr * dtScale;
+
+      // life
+      p.life -= dt;
+      if (p.life <= 0 || p.y > H + 60) {
+        confettiParticles.splice(i, 1);
+      }
+    }
+  }
+
+  function render() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+
+    // draw in a single pass
+    for (const p of confettiParticles) {
+      const alpha = Math.max(0, Math.min(1, p.life / p.maxLife));
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.w * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.shape === 'triangle') {
+        ctx.beginPath();
+        ctx.moveTo(-p.w / 2, p.h / 2);
+        ctx.lineTo(0, -p.h / 2);
+        ctx.lineTo(p.w / 2, p.h / 2);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // rectangular confetti with slight corner rounding
+        const rw = p.w;
+        const rh = p.h;
+        const r = Math.min(3, rw * 0.15);
+        roundRect(ctx, -rw / 2, -rh / 2, rw, rh, r);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+  }
+
+  function tick(now) {
+    const dt = Math.min(40, now - lastTime); // clamp to avoid spiral of death
+    lastTime = now;
+    accumulator += dt;
+
+    // Fixed steps for stable physics
+    while (accumulator >= FIXED_DT) {
+      updatePhysics(FIXED_DT);
+      accumulator -= FIXED_DT;
+    }
+
+    render();
+
+    if (confettiParticles.length > 0) {
+      confettiTicker = requestAnimationFrame(tick);
+    } else {
+      confettiRunning = false;
+      if (confettiTicker) {
+        cancelAnimationFrame(confettiTicker);
+        confettiTicker = null;
+      }
+      if (ctx) ctx.clearRect(0, 0, W, H);
+    }
+  }
+
+  confettiTicker = requestAnimationFrame(tick);
+
+  /**
+   * spawnBurst now emits particles in small batches across several frames to avoid a heavy synchronous spike.
+   * batchSize: how many particles per frame to create
+   */
+  function spawnBurst({
+    cx,
+    cy,
+    count,
+    spread,
+    palette,
+    mixShapes,
+    downOnly = false,
+    gravity: g
+  }) {
+    const baseSpeed = 10;
+    const batchSize = Math.max(16, Math.floor(count / 6)); // create in ~6 frames
+    let created = 0;
+
+    function emitBatch() {
+      const toCreate = Math.min(batchSize, count - created);
+      for (let i = 0; i < toCreate; i++) {
+        const angle = downOnly
+          ? (Math.random() * (Math.PI * 0.5)) + Math.PI / 2
+          : (Math.random() * spread) - (spread / 2);
+        const speed = baseSpeed * (0.6 + Math.random() * 1.4);
+        const size = (Math.random() * 7) + 4;
+        const w = size;
+        const h = size * (0.7 + Math.random() * 1.4);
+
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        const shapes = mixShapes ? ['rect', 'circle', 'triangle'] : ['rect'];
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+
+        const sign = Math.random() > 0.5 ? 1 : -1;
+        confettiParticles.push({
+          x: cx + (Math.random() - 0.5) * 8,
+          y: cy + (Math.random() - 0.5) * 8,
+          vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 1.2,
+          vy: Math.sin(angle) * speed + (Math.random() - 0.5) * 1.2,
+          w,
+          h,
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.2 * sign,
+          color,
+          life: duration + (Math.random() * 800 - 200),
+          maxLife: duration,
+          shape,
+          drag: drag * (0.985 + Math.random() * 0.02)
+        });
+
+        // Safety cap
+        if (confettiParticles.length > 4000) break;
+      }
+
+      created += toCreate;
+      if (created < count) {
+        // schedule next small batch next animation frame to avoid blocking
+        requestAnimationFrame(emitBatch);
+      }
+    }
+
+    // Start emitting across frames
+    requestAnimationFrame(emitBatch);
+  }
+
+  // Helper for rounded rects
+  function roundRect(ctx, x, y, w, h, r) {
+    const radius = r || 0;
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+}
+
+/* ===== Celebration orchestration ===== */
+async function startCelebration() {
   // Play win sound at celebration start (now safely unlocked)
   winSound.currentTime = 0;
   winSound.play().catch(() => {});
@@ -666,11 +1107,19 @@ function startCelebration() {
     ch.classList.add('celebrate-text');
   });
 
+  // Start both chases: border and solution (opposite directions), 2 laps
+  const speedMs = 80; // slightly faster for snappier motion
+  const laps = 2;
+
+  // Kick off both chases and wait for both to complete so they stop together
+  const borderPromise = startBorderChase({ speedMs, tail: 6, laps });
+  const solutionPromise = startSolutionChase({ speedMs, tail: 4, laps });
+
   // Big confetti: multi-burst + rain tail, theme-matched colors
   launchConfetti({
     mode: 'multiBurst',
     bursts: 4,
-    countPerBurst: 260,
+    countPerBurst: 220,
     rainTailMs: 1600,
     duration: 5200,
     gravity: 0.38,
@@ -680,8 +1129,11 @@ function startCelebration() {
     mixShapes: true
   });
 
-  // Auto end celebration state after ~6 seconds
-  setTimeout(stopCelebration, 6000);
+  // Wait for both chases to finish and then end celebration shortly after
+  await Promise.all([borderPromise, solutionPromise]);
+
+  // Keep the celebrating visuals for just a short moment, then stop
+  setTimeout(stopCelebration, 420);
 }
 
 function stopCelebration() {
@@ -689,6 +1141,8 @@ function stopCelebration() {
   boardEl.querySelectorAll('.cell .char').forEach(ch => {
     ch.classList.remove('celebrate-text');
   });
+  stopBorderChase();
+  stopSolutionChase();
   // Confetti will self-clear when particles expire
 }
 
@@ -721,152 +1175,6 @@ function scheduleFitToViewport() {
 }
 
 window.addEventListener('resize', scheduleFitToViewport);
-
-/* ===== Enhanced confetti engine ===== */
-function launchConfetti({
-  mode = 'burst',           // 'burst' | 'multiBurst'
-  bursts = 3,               // number of bursts (multiBurst)
-  countPerBurst = 300,      // particles per burst
-  rainTailMs = 1200,        // spawn additional particles for this long
-  duration = 4200,
-  gravity = 0.35,
-  spread = Math.PI * 1.1,
-  drag = 0.985,
-  palette = ['#68e3ff', '#a78bfa', '#f472b6', '#60a5fa', '#22d3ee'],
-  mixShapes = true          // rect, circle, triangle
-} = {}) {
-  resizeConfetti();
-  confettiParticles = [];
-  confettiRunning = true;
-
-  const W = confettiCanvas.width;
-  const H = confettiCanvas.height;
-
-  const centers = mode === 'multiBurst'
-    ? [
-        [W * 0.2, H * 0.35],
-        [W * 0.5, H * 0.35],
-        [W * 0.8, H * 0.35],
-        [W * 0.5, H * 0.20]
-      ].slice(0, bursts)
-    : [[W / 2, H * 0.4]];
-
-  // Spawn a burst at each center
-  for (const [cx, cy] of centers) {
-    spawnBurst({ cx, cy, count: countPerBurst, spread, palette, mixShapes });
-  }
-
-  // Optional rain tail (small additional emissions from top)
-  const rainStart = performance.now();
-  const rain = () => {
-    const now = performance.now();
-    if (now - rainStart > rainTailMs) return;
-    spawnBurst({
-      cx: Math.random() * W,
-      cy: -8,
-      count: Math.floor(countPerBurst * 0.25),
-      spread: Math.PI * 0.5,
-      palette,
-      mixShapes,
-      downOnly: true
-    });
-    setTimeout(rain, 140);
-  };
-  if (rainTailMs > 0) rain();
-
-  let lastTime = performance.now();
-
-  requestAnimationFrame(function tick(t) {
-    const delta = t - lastTime;
-    lastTime = t;
-    const step = delta / 16;
-
-    ctx.clearRect(0, 0, W, H);
-
-    confettiParticles.forEach(p => {
-      p.vy += gravity * step;
-      p.vx *= drag;
-      p.vy *= drag;
-
-      p.x += p.vx * step;
-      p.y += p.vy * step;
-      p.rot += p.vr * step;
-
-      p.life -= delta;
-      const alpha = Math.max(0, p.life / p.maxLife);
-
-      if (alpha <= 0) return;
-
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rot);
-      ctx.fillStyle = p.color;
-
-      if (p.shape === 'circle') {
-        ctx.beginPath();
-        ctx.arc(0, 0, p.w * 0.5, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (p.shape === 'triangle') {
-        ctx.beginPath();
-        ctx.moveTo(-p.w / 2, p.h / 2);
-        ctx.lineTo(0, -p.h / 2);
-        ctx.lineTo(p.w / 2, p.h / 2);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-      }
-      ctx.restore();
-    });
-
-    confettiParticles = confettiParticles.filter(p => p.life > 0 && p.y < H + 40);
-
-    if (confettiParticles.length) {
-      requestAnimationFrame(tick);
-    } else {
-      confettiRunning = false;
-      ctx.clearRect(0, 0, W, H);
-    }
-  });
-
-  function spawnBurst({
-    cx,
-    cy,
-    count,
-    spread,
-    palette,
-    mixShapes,
-    downOnly = false
-  }) {
-    for (let i = 0; i < count; i++) {
-      const angle = downOnly
-        ? Math.random() * Math.PI + Math.PI / 2
-        : Math.random() * spread - spread / 2;
-      const speed = Math.random() * 12 + 10;
-      const size = Math.random() * 7 + 4;
-
-      const color = palette[Math.floor(Math.random() * palette.length)];
-      const shapes = mixShapes ? ['rect', 'circle', 'triangle'] : ['rect'];
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
-
-      confettiParticles.push({
-        x: cx,
-        y: cy,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - (downOnly ? 0 : 6),
-        w: size,
-        h: size * (Math.random() > 0.5 ? 1.6 : 1),
-        rot: Math.random() * Math.PI,
-        vr: (Math.random() - 0.5) * 0.35,
-        color,
-        life: duration,
-        maxLife: duration,
-        shape
-      });
-    }
-  }
-}
 
 /* ===== Click outside to clear selection/highlights ===== */
 document.addEventListener('click', (evt) => {

@@ -299,7 +299,6 @@ export const WORDS = [
 "idea",
 "iron",
 "iris",
-"isai",
 "isle",
 "jack",
 "jail",
