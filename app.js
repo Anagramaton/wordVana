@@ -36,9 +36,13 @@ function scheduleSettingsReturn(delay = 1200) {
 
 const settingsModal = document.getElementById('settingsModal');
 const settingsClose = document.getElementById('settingsClose');
+const newGameBtn = document.getElementById('newGameBtn');
 
 const confettiCanvas = document.getElementById('confetti');
 const ctx = confettiCanvas?.getContext('2d');
+
+const victoryOverlay = document.getElementById('victoryOverlay');
+const victoryNewGameBtn = document.getElementById('victoryNewGameBtn');
 
 /* ===== Audio: mobile-safe unlock + format fallback ===== */
 function canPlay(type) {
@@ -81,11 +85,37 @@ function unlockAudio() {
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 document.addEventListener('keydown', unlockAudio, { once: true });
 
+/* When audio ends, orchestrate graceful stop + show victory overlay */
+winSound.addEventListener('ended', () => {
+  if (DEV) console.log('winSound ended -> fade confetti, stop chases, show victory overlay');
+  // Stop chasing animations immediately
+  stopBorderChase();
+  stopPlayableTileChase();
+  stopSolutionChase();
+  stopSolutionLetterChase();
+
+  // Stop any further confetti emission, but allow existing particles to fade gracefully
+  stopConfettiEmission();
+  fadeOutConfetti(1800);
+
+  // Remove celebrating visuals (letters/frames) while allowing confetti to fade
+  document.documentElement.classList.remove('celebrating');
+  boardEl.querySelectorAll('.cell .char').forEach(ch => {
+    ch.classList.remove('celebrate-text');
+  });
+
+  // Show the victory overlay in the middle of the screen
+  showVictoryOverlay();
+});
+
 /* ===== Confetti ===== */
 let confettiParticles = [];
 let confettiRunning = false;
 let confettiTicker = null; // animation handle for our fixed-step loop
 let confettiOptionsGlobal = null;
+
+// Control emission (when false, no new bursts/rain should be scheduled)
+let confettiEmitEnabled = true;
 
 function resizeConfetti() {
   if (!confettiCanvas) return;
@@ -222,7 +252,11 @@ if (difficultySelect) {
   });
 }
 
-
+/* New Game button in settings */
+newGameBtn?.addEventListener('click', async () => {
+  closeSettings();
+  await resetGame();
+});
 
 /* ===== New puzzle: prefer offline pool, fallback to live generator ===== */
 async function newPuzzle() {
@@ -293,6 +327,16 @@ async function newPuzzle() {
     document.body.style.cursor = '';
   }
 }
+
+function getSolutionCellElementsInSolveOrder() {
+  const arr = [];
+  for (const [cellKey] of solutionLetters.entries()) {
+    const el = boardEl.querySelector(`.cell[data-coord="${cellKey}"] .char`);
+    if (el) arr.push(el);
+  }
+  return arr;
+}
+
 
 /** Generator guard: keeps trying until size fits */
 function generatePuzzleWithinSizeGuaranteed(dictionary, targetN, options = {}) {
@@ -630,35 +674,37 @@ function allTokensPlaced() {
   return true;
 }
 
-/* ===== Celebration: boosted confetti + UI color party ===== */
-function validateCompletion() {
-  for (const [cellKey, expected] of solutionLetters.entries()) {
-    const cell = boardEl.querySelector(`.cell[data-coord="${cellKey}"] .char`);
-    const actual = (cell?.textContent || '').toUpperCase();
-    if (actual !== expected) {
-      if (DEV) console.log('Mismatch at', cellKey, 'expected:', expected, 'got:', actual);
-      return; // only celebrate on perfect completion
-    }
+function getWinSoundDurationSafe(defaultMs = 4500) {
+  // If metadata is already loaded, use real duration
+  if (!isNaN(winSound.duration) && winSound.duration > 0) {
+    return Math.floor(winSound.duration * 1000);
   }
-  showToast('Solved!');
-  startCelebration();
+
+  // Otherwise wait briefly for metadata
+  try {
+    return new Promise(resolve => {
+      const onMeta = () => {
+        winSound.removeEventListener('loadedmetadata', onMeta);
+        resolve(Math.floor(winSound.duration * 1000));
+      };
+      winSound.addEventListener('loadedmetadata', onMeta, { once: true });
+
+      // fallback if metadata never fires
+      setTimeout(() => resolve(defaultMs), 400);
+    });
+  } catch {
+    return defaultMs;
+  }
 }
 
-/* Read theme palette (fall back if not defined) */
-function getThemePathPalette() {
-  const styles = getComputedStyle(document.documentElement);
-  const colors = [];
-  for (let i = 0; i < 5; i++) {
-    const v = styles.getPropertyValue(`--path-${i}`).trim();
-    if (v) colors.push(v);
-  }
-  if (colors.length) return colors;
-  return ['#68e3ff', '#a78bfa', '#f472b6', '#60a5fa', '#22d3ee'];
-}
+
+
 
 /* ===== Border chase animation (lights moving around slots) ===== */
 let borderChaseRunning = false;
 let borderChaseHandle = null;
+let borderPromise = null;
+let borderResolve = null;
 
 function buildBorderSequence(n) {
   const seq = [];
@@ -673,37 +719,228 @@ function buildBorderSequence(n) {
   return seq;
 }
 
-/**
- * startBorderChase:
- * - speedMs: ms per step
- * - tail: tail length for gradient
- * - laps: number of laps to run (2 requested)
- * - returns a Promise that resolves when chase completes
- */
+function buildPlayablePerimeterSequence() {
+  const seq = [];
+
+  // top row L -> R
+  for (let c = 0; c < N; c++)
+    if (gridRef[0][c] === 1) seq.push(`0,${c}`);
+
+  // right col T -> B
+  for (let r = 1; r < N; r++)
+    if (gridRef[r][N-1] === 1) seq.push(`${r},${N-1}`);
+
+  // bottom row R -> L
+  for (let c = N-2; c >= 0; c--)
+    if (gridRef[N-1][c] === 1) seq.push(`${N-1},${c}`);
+
+  // left col B -> T
+  for (let r = N-2; r > 0; r--)
+    if (gridRef[r][0] === 1) seq.push(`${r},0`);
+
+  return seq;
+}
+
+
+/* STEP 3 — perimeter tile chase animation */
+let tileChaseRunning = false;
+let tileChaseHandle = null;
+let tilePromise = null;
+let tileResolve = null;
+
+function startPlayableTileChase({ speedMs = 90, tail = 5, laps = 2 } = {}) {
+  if (tileChaseRunning) return Promise.resolve();
+
+  const seqRaw = buildPlayablePerimeterSequence();
+  if (!seqRaw.length) return Promise.resolve();
+
+  // opposite direction of border chase
+  const seq = seqRaw.slice().reverse();
+
+  tileChaseRunning = true;
+
+  let idx = 0;
+  const total = seq.length;
+  const totalSteps = total * laps;
+  let stepsTaken = 0;
+
+  const clearAll = () => {
+    boardEl.querySelectorAll('.tile-lit,.tile-lit-1,.tile-lit-2,.tile-lit-3')
+      .forEach(el => el.classList.remove('tile-lit','tile-lit-1','tile-lit-2','tile-lit-3'));
+  };
+
+  clearAll();
+
+  tilePromise = new Promise((resolve) => {
+    tileResolve = resolve;
+
+    const step = () => {
+      if (!tileChaseRunning) {
+        clearAll();
+        // resolve early if stopped
+        if (tileResolve) {
+          tileResolve();
+          tileResolve = null;
+          tilePromise = null;
+        }
+        return;
+      }
+
+      clearAll();
+
+      for (let t = 0; t < tail; t++) {
+        const pos = (idx - t + total) % total;
+        const key = seq[pos];
+
+        const cell = boardEl.querySelector(`.cell[data-coord="${key}"]`);
+        if (!cell) continue;
+
+        cell.classList.add('tile-lit');
+        if (t === 1) cell.classList.add('tile-lit-1');
+        if (t === 2) cell.classList.add('tile-lit-2');
+        if (t >= 3) cell.classList.add('tile-lit-3');
+      }
+
+      idx = (idx + 1) % total;
+      stepsTaken++;
+
+      if (stepsTaken >= totalSteps) {
+        setTimeout(() => {
+          tileChaseRunning = false;
+          clearAll();
+          if (tileResolve) {
+            tileResolve();
+            tileResolve = null;
+            tilePromise = null;
+          }
+        }, 200);
+      }
+    };
+
+    let last = performance.now();
+    let acc = 0;
+
+    function tick(now) {
+      if (!tileChaseRunning) {
+        if (tileChaseHandle) {
+          cancelAnimationFrame(tileChaseHandle);
+          tileChaseHandle = null;
+        }
+        return;
+      }
+      const dt = now - last;
+      last = now;
+      acc += dt;
+
+      while (acc >= speedMs) {
+        step();
+        acc -= speedMs;
+      }
+
+      tileChaseHandle = requestAnimationFrame(tick);
+
+      if (!tileChaseRunning && tileChaseHandle) {
+        cancelAnimationFrame(tileChaseHandle);
+        tileChaseHandle = null;
+      }
+    }
+
+    tileChaseHandle = requestAnimationFrame(tick);
+  });
+
+  return tilePromise;
+}
+
+function stopPlayableTileChase() {
+  if (!tileChaseRunning) return;
+  tileChaseRunning = false;
+  if (tileChaseHandle) {
+    cancelAnimationFrame(tileChaseHandle);
+    tileChaseHandle = null;
+  }
+  boardEl.querySelectorAll('.tile-lit,.tile-lit-1,.tile-lit-2,.tile-lit-3')
+    .forEach(el => el.classList.remove('tile-lit','tile-lit-1','tile-lit-2','tile-lit-3'));
+  if (tileResolve) {
+    tileResolve();
+    tileResolve = null;
+    tilePromise = null;
+  }
+}
+
+
+/* Border chase */
 function startBorderChase({ speedMs = 90, tail = 6, laps = 2 } = {}) {
   if (borderChaseRunning) return Promise.resolve();
   borderChaseRunning = true;
+
   const seq = buildBorderSequence(N);
   let idx = 0;
   const total = seq.length;
   const totalSteps = total * laps;
   let stepsTaken = 0;
 
-  // clear any previous class
-  slotEls.forEach(el => el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3'));
+  // Read theme path palette (used for dynamic accent cycling)
+  const styles = getComputedStyle(document.documentElement);
+  const accentCycle = [];
+  for (let i = 0; i < 5; i++) {
+    const v = styles.getPropertyValue(`--path-${i}`).trim();
+    if (v) accentCycle.push(v);
+  }
 
-  return new Promise((resolve) => {
+  let accentIndex = 0;
+
+  // Save current theme accents so we can restore them
+  const root = document.documentElement;
+  const prevAccent = styles.getPropertyValue('--accent');
+  const prevAccent2 = styles.getPropertyValue('--accent-2');
+
+  // Utility — apply a color pair from cycle
+  function applyAccentPair(i) {
+    const c0 = accentCycle[i % accentCycle.length];
+    const c1 = accentCycle[(i + 1) % accentCycle.length];
+    root.style.setProperty('--accent', c0);
+    root.style.setProperty('--accent-2', c1);
+  }
+
+  // Clear any previous lit classes
+  slotEls.forEach(el =>
+    el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3')
+  );
+
+  borderPromise = new Promise((resolve) => {
+    borderResolve = resolve;
+
     const step = () => {
-      // clear previous lit classes (we'll add for current tail)
-      slotEls.forEach(el => {
-        el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3');
-      });
+      if (!borderChaseRunning) {
+        // restore theme accents
+        root.style.setProperty('--accent', prevAccent);
+        root.style.setProperty('--accent-2', prevAccent2);
+
+        slotEls.forEach(el =>
+          el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3')
+        );
+        if (borderResolve) {
+          borderResolve();
+          borderResolve = null;
+          borderPromise = null;
+        }
+        return;
+      }
+
+      // Rotate accent pair each step (WOW mode)
+      applyAccentPair(accentIndex++);
+      
+      // Clear then relight tail
+      slotEls.forEach(el =>
+        el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3')
+      );
 
       for (let t = 0; t < tail; t++) {
         const pos = (idx - t + total) % total;
         const id = seq[pos];
         const el = slotEls.get(id);
         if (!el) continue;
+
         el.classList.add('border-lit');
         if (t === 1) el.classList.add('border-lit-1');
         if (t === 2) el.classList.add('border-lit-2');
@@ -714,37 +951,57 @@ function startBorderChase({ speedMs = 90, tail = 6, laps = 2 } = {}) {
       stepsTaken++;
 
       if (stepsTaken >= totalSteps) {
-        // leave final position lit briefly, then resolve & clear
         setTimeout(() => {
+          // restore theme accents
+          root.style.setProperty('--accent', prevAccent);
+          root.style.setProperty('--accent-2', prevAccent2);
+
           borderChaseRunning = false;
-          slotEls.forEach(el => el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3'));
-          resolve();
-        }, 220);
+          slotEls.forEach(el =>
+            el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3')
+          );
+          if (borderResolve) {
+            borderResolve();
+            borderResolve = null;
+            borderPromise = null;
+          }
+        }, 240);
       }
     };
 
-    // performance-based scheduler (reduce jitter) with accumulator
+    // fixed-step scheduler
     let last = performance.now();
-    let accumulator = 0;
+    let acc = 0;
 
     function tick(now) {
-      if (!borderChaseRunning) return;
+      if (!borderChaseRunning) {
+        if (borderChaseHandle) {
+          cancelAnimationFrame(borderChaseHandle);
+          borderChaseHandle = null;
+        }
+        return;
+      }
       const dt = now - last;
       last = now;
-      accumulator += dt;
-      while (accumulator >= speedMs) {
+      acc += dt;
+
+      while (acc >= speedMs) {
         step();
-        accumulator -= speedMs;
+        acc -= speedMs;
       }
+
       borderChaseHandle = requestAnimationFrame(tick);
-      // If we're finished, the promise resolution in step will cancel via borderChaseRunning=false
+
       if (!borderChaseRunning && borderChaseHandle) {
         cancelAnimationFrame(borderChaseHandle);
         borderChaseHandle = null;
       }
     }
+
     borderChaseHandle = requestAnimationFrame(tick);
   });
+
+  return borderPromise;
 }
 
 function stopBorderChase() {
@@ -757,26 +1014,25 @@ function stopBorderChase() {
   slotEls.forEach(el => {
     el.classList.remove('border-lit', 'border-lit-1', 'border-lit-2', 'border-lit-3');
   });
+  if (borderResolve) {
+    borderResolve();
+    borderResolve = null;
+    borderPromise = null;
+  }
 }
 
-/* ===== Solution-chase: move a lit "pulse" around only solution slots, opposite direction ===== */
+
 let solutionChaseRunning = false;
 let solutionChaseHandle = null;
+let solutionPromise = null;
+let solutionResolve = null;
 
 function buildSolutionSequence() {
-  // Use slotAssignment.slots order (which is top->right->bottom->left like buildBorderSequence)
-  // but only include those slots that actually have a solution mapping (i.e., tokens/letters)
   if (!slotAssignment || !slotAssignment.slots) return [];
   const seq = slotAssignment.slots.map(s => `${s.side}:${s.index}`).filter(id => slotEls.has(id) && slotAssignment.bySlot.has(id));
   return seq;
 }
 
-/**
- * startSolutionChase:
- * - runs in opposite direction to border (so we reverse sequence)
- * - speedMs, tail, laps same semantics
- * - returns a Promise that resolves when done
- */
 function startSolutionChase({ speedMs = 90, tail = 4, laps = 2 } = {}) {
   if (solutionChaseRunning) return Promise.resolve();
   const seqRaw = buildSolutionSequence();
@@ -788,12 +1044,23 @@ function startSolutionChase({ speedMs = 90, tail = 4, laps = 2 } = {}) {
   const totalSteps = total * laps;
   let stepsTaken = 0;
 
-  // clear any previous class
+  
   slotEls.forEach(el => el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2'));
 
-  return new Promise((resolve) => {
+  solutionPromise = new Promise((resolve) => {
+    solutionResolve = resolve;
+
     const step = () => {
-      // clear
+      if (!solutionChaseRunning) {
+        slotEls.forEach(el => el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2'));
+        if (solutionResolve) {
+          solutionResolve();
+          solutionResolve = null;
+          solutionPromise = null;
+        }
+        return;
+      }
+
       slotEls.forEach(el => {
         el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2');
       });
@@ -815,17 +1082,29 @@ function startSolutionChase({ speedMs = 90, tail = 4, laps = 2 } = {}) {
         setTimeout(() => {
           solutionChaseRunning = false;
           slotEls.forEach(el => el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2'));
-          resolve();
+          if (solutionResolve) {
+            solutionResolve();
+            solutionResolve = null;
+            solutionPromise = null;
+          }
         }, 220);
       }
     };
+    
+
 
     // performance scheduler
     let last = performance.now();
     let accumulator = 0;
 
     function tick(now) {
-      if (!solutionChaseRunning) return;
+      if (!solutionChaseRunning) {
+        if (solutionChaseHandle) {
+          cancelAnimationFrame(solutionChaseHandle);
+          solutionChaseHandle = null;
+        }
+        return;
+      }
       const dt = now - last;
       last = now;
       accumulator += dt;
@@ -841,6 +1120,8 @@ function startSolutionChase({ speedMs = 90, tail = 4, laps = 2 } = {}) {
     }
     solutionChaseHandle = requestAnimationFrame(tick);
   });
+
+  return solutionPromise;
 }
 
 function stopSolutionChase() {
@@ -853,36 +1134,137 @@ function stopSolutionChase() {
   slotEls.forEach(el => {
     el.classList.remove('solution-lit', 'solution-lit-1', 'solution-lit-2');
   });
+  if (solutionResolve) {
+    solutionResolve();
+    solutionResolve = null;
+    solutionPromise = null;
+  }
 }
 
-/* ===== Improved confetti engine (fixed-timestep physics, smoother rendering, staggered emission) ===== */
 
-/*
-  Key improvements to reduce the initial "pop" lag:
-  - Spread particle creation across a few animation frames (batch emission)
-  - Limit synchronous work per frame
-  - Fixed timestep physics to avoid jitter
-  - DPR scaling for crispness
-*/
 
+/* Solution Letter Chase: animates solution letter elements (per-cell) */
+let solutionLetterRunning = false;
+let solutionLetterHandle = null;
+let solutionLetterPromise = null;
+let solutionLetterResolve = null;
+
+function startSolutionLetterChase({ speedMs = 110, laps = 2 } = {}) {
+  if (solutionLetterRunning) return Promise.resolve();
+  const els = getSolutionCellElementsInSolveOrder();
+  if (!els.length) return Promise.resolve();
+
+  solutionLetterRunning = true;
+  let idx = 0;
+  const total = els.length;
+  const totalSteps = total * laps;
+  let stepsTaken = 0;
+
+  // clear classes
+  els.forEach(el => el.classList.remove('solution-letter-chase'));
+
+  solutionLetterPromise = new Promise((resolve) => {
+    solutionLetterResolve = resolve;
+
+    const step = () => {
+      if (!solutionLetterRunning) {
+        els.forEach(el => el.classList.remove('solution-letter-chase'));
+        if (solutionLetterResolve) {
+          solutionLetterResolve();
+          solutionLetterResolve = null;
+          solutionLetterPromise = null;
+        }
+        return;
+      }
+
+      // clear old
+      els.forEach(el => el.classList.remove('solution-letter-chase'));
+
+      // light up a single element for this pass
+      const el = els[idx];
+      if (el) {
+        el.classList.add('solution-letter-chase');
+      }
+
+      idx = (idx + 1) % total;
+      stepsTaken++;
+
+      if (stepsTaken >= totalSteps) {
+        setTimeout(() => {
+          solutionLetterRunning = false;
+          els.forEach(e => e.classList.remove('solution-letter-chase'));
+          if (solutionLetterResolve) {
+            solutionLetterResolve();
+            solutionLetterResolve = null;
+            solutionLetterPromise = null;
+          }
+        }, 120);
+      }
+    };
+
+    let last = performance.now();
+    let acc = 0;
+    function tick(now) {
+      if (!solutionLetterRunning) {
+        if (solutionLetterHandle) {
+          cancelAnimationFrame(solutionLetterHandle);
+          solutionLetterHandle = null;
+        }
+        return;
+      }
+      const dt = now - last;
+      last = now;
+      acc += dt;
+      while (acc >= speedMs) {
+        step();
+        acc -= speedMs;
+      }
+      solutionLetterHandle = requestAnimationFrame(tick);
+    }
+    solutionLetterHandle = requestAnimationFrame(tick);
+  });
+
+  return solutionLetterPromise;
+}
+
+function stopSolutionLetterChase() {
+  if (!solutionLetterRunning) return;
+  solutionLetterRunning = false;
+  if (solutionLetterHandle) {
+    cancelAnimationFrame(solutionLetterHandle);
+    solutionLetterHandle = null;
+  }
+  const els = getSolutionCellElementsInSolveOrder();
+  els.forEach(el => el.classList.remove('solution-letter-chase'));
+  if (solutionLetterResolve) {
+    solutionLetterResolve();
+    solutionLetterResolve = null;
+    solutionLetterPromise = null;
+  }
+}
+
+
+/* Confetti (launch + helpers) */
 function launchConfetti({
-  mode = 'burst',           // 'burst' | 'multiBurst'
-  bursts = 3,               // number of bursts (multiBurst)
-  countPerBurst = 220,      // particles per burst
-  rainTailMs = 1200,        // spawn additional particles for this long
-  duration = 4200,
-  gravity = 0.45,
+  mode = 'burst',
+  bursts = 3,
+  countPerBurst = 220,
+  rainTailMs = 2600,
+  duration = 7200,
+  gravity = 0.36,
   spread = Math.PI * 1.1,
-  drag = 0.995,
+  drag = 0.997,
   palette = ['#68e3ff', '#a78bfa', '#f472b6', '#60a5fa', '#22d3ee'],
-  mixShapes = true          // rect, circle, triangle
+  mixShapes = true
 } = {}) {
+  // enable emission
+  confettiEmitEnabled = true;
+
   resizeConfetti();
   confettiParticles = [];
   confettiRunning = true;
   confettiOptionsGlobal = { gravity, drag, duration };
 
-  // Canvas logical size (CSS pixels)
   const W = confettiCanvas.width / (window.devicePixelRatio || 1);
   const H = confettiCanvas.height / (window.devicePixelRatio || 1);
 
@@ -895,15 +1277,17 @@ function launchConfetti({
       ].slice(0, bursts)
     : [[W / 2, H * 0.4]];
 
-  // We'll spawn bursts but stagger particle creation in small batches per burst
+  // spawn initial bursts (won't spawn if emission disabled)
   for (const [cx, cy] of centers) {
+    if (!confettiEmitEnabled) break;
     spawnBurst({ cx, cy, count: countPerBurst, spread, palette, mixShapes, gravity });
   }
 
-  // Optional rain tail (small additional emissions from top)
+  // rain tail scheduling
   const rainStart = performance.now();
   const rain = () => {
     const now = performance.now();
+    if (!confettiEmitEnabled) return;
     if (now - rainStart > rainTailMs) return;
     spawnBurst({
       cx: Math.random() * W,
@@ -917,10 +1301,9 @@ function launchConfetti({
     });
     setTimeout(rain, 140);
   };
-  if (rainTailMs > 0) rain();
+  if (rainTailMs > 0 && confettiEmitEnabled) rain();
 
-  // Fixed timestep loop
-  const FIXED_DT = 16.6667; // ms ~ 60fps
+  const FIXED_DT = 16.6667;
   let accumulator = 0;
   let lastTime = performance.now();
 
@@ -1025,11 +1408,13 @@ function launchConfetti({
     downOnly = false,
     gravity: g
   }) {
+    if (!confettiEmitEnabled) return;
     const baseSpeed = 10;
     const batchSize = Math.max(16, Math.floor(count / 6)); // create in ~6 frames
     let created = 0;
 
     function emitBatch() {
+      if (!confettiEmitEnabled) return;
       const toCreate = Math.min(batchSize, count - created);
       for (let i = 0; i < toCreate; i++) {
         const angle = downOnly
@@ -1093,29 +1478,34 @@ function launchConfetti({
   }
 }
 
-/* ===== Celebration orchestration ===== */
+/* Stop emission of new confetti bursts (existing particles will still animate) */
+function stopConfettiEmission() {
+  confettiEmitEnabled = false;
+}
+
+/* Gracefully shorten remaining life of all particles so they quickly fade out (ms) */
+function fadeOutConfetti(fadeMs = 1500) {
+  for (const p of confettiParticles) {
+    p.life = Math.min(p.life, fadeMs);
+    p.maxLife = Math.min(p.maxLife, fadeMs);
+  }
+}
+
+/* ===== Celebration orchestration helpers ===== */
 async function startCelebration() {
-  // Play win sound at celebration start (now safely unlocked)
+  // Play win sound at celebration start
   winSound.currentTime = 0;
   winSound.play().catch(() => {});
 
-  // Celebration UI class (CSS drives color changes/animations)
+  // Celebration UI state
   document.documentElement.classList.add('celebrating');
 
-  // Animate all letters subtly even if empty (only visible ones show effect)
+  // Subtle celebration animation on letters
   boardEl.querySelectorAll('.cell .char').forEach(ch => {
     ch.classList.add('celebrate-text');
   });
 
-  // Start both chases: border and solution (opposite directions), 2 laps
-  const speedMs = 80; // slightly faster for snappier motion
-  const laps = 2;
-
-  // Kick off both chases and wait for both to complete so they stop together
-  const borderPromise = startBorderChase({ speedMs, tail: 6, laps });
-  const solutionPromise = startSolutionChase({ speedMs, tail: 4, laps });
-
-  // Big confetti: multi-burst + rain tail, theme-matched colors
+  // Confetti pop only — chases are orchestrated in validateCompletion()
   launchConfetti({
     mode: 'multiBurst',
     bursts: 4,
@@ -1129,11 +1519,7 @@ async function startCelebration() {
     mixShapes: true
   });
 
-  // Wait for both chases to finish and then end celebration shortly after
-  await Promise.all([borderPromise, solutionPromise]);
-
-  // Keep the celebrating visuals for just a short moment, then stop
-  setTimeout(stopCelebration, 420);
+  // NOTE: do not await chase promises here; validateCompletion will orchestrate them and winSound 'ended' handles the end-of-audio behavior
 }
 
 function stopCelebration() {
@@ -1143,9 +1529,105 @@ function stopCelebration() {
   });
   stopBorderChase();
   stopSolutionChase();
-  // Confetti will self-clear when particles expire
+  stopPlayableTileChase();
+  stopSolutionLetterChase();
+  // Confetti will self-clear when particles expire (we don't forcibly clear canvas)
 }
 
+function stopAllAnimationsAndAudio() {
+  stopCelebration();
+  try {
+    winSound.pause();
+    winSound.currentTime = 0;
+  } catch {}
+}
+
+/* ===== Completion validation & orchestration ===== */
+async function validateCompletion() {
+  for (const [cellKey, expected] of solutionLetters.entries()) {
+    const cell = boardEl.querySelector(`.cell[data-coord="${cellKey}"] .char`);
+    const actual = (cell?.textContent || '').toUpperCase();
+    if (actual !== expected) {
+      if (DEV) console.log('Mismatch at', cellKey, 'expected:', expected, 'got:', actual);
+      return;
+    }
+  }
+
+  showToast('Solved!');
+
+  // 1) CONFETTI POP + SOUND — instant reward
+  startCelebration();
+
+  // 2) SECOND IMPACT CONFETTI POP — aligned to waveform transient (~5.0s)
+  setTimeout(() => {
+    launchConfetti({
+      mode: 'burst',
+      bursts: 1,
+      countPerBurst: 180,
+      rainTailMs: 900,
+      duration: 2600,
+      gravity: 0.38,
+      spread: Math.PI * 1.25,
+      drag: 0.987,
+      palette: getThemePathPalette(),
+      mixShapes: true
+    });
+  }, 5000); // <-- adjust if you want a tighter timestamp
+
+  // 3) SYNC CHASE SEQUENCE TO AUDIO DURATION
+  try {
+    const soundMs = await getWinSoundDurationSafe(4500);
+    
+    // leave ~300ms for hold at the end
+    const targetMs = Math.max(1200, soundMs - 300);
+    const segment = targetMs / 3;
+
+    // derive timing per segment relative to board size
+    function timingForSegment(lenMs, baseSpeed = 90) {
+      const speedMs = Math.max(50, baseSpeed);
+      const approxSteps = Math.max(1, Math.floor(lenMs / speedMs));
+      const laps = Math.max(1, Math.round(approxSteps / N));
+      return { speedMs, laps };
+    }
+
+    // Border = longer lead motion
+    const tBorder = timingForSegment(segment * 1.1, 90);
+
+    // Playable perimeter = echo motion
+    const tPerim  = timingForSegment(segment * 0.9, 90);
+
+    // Solution shimmer = tighter closing pass
+    const tSolve  = timingForSegment(segment * 0.8, 80);
+
+    // Run phases in cinematic order
+    await startBorderChase({ ...tBorder, tail: 6 });
+    await startPlayableTileChase({ ...tPerim, tail: 5 });
+    await startSolutionChase({ ...tSolve, tail: 4 });
+    await startSolutionLetterChase({ speedMs: 110, laps: 2 });
+
+    // Once all done naturally, leave a short hold and then stopCelebration
+    setTimeout(stopCelebration, 420);
+
+  } catch (e) {
+    if (DEV) console.warn('Celebration animation interrupted', e);
+    // make sure everything is stopped
+    stopCelebration();
+  }
+}
+
+/* Read theme palette (fall back if not defined) */
+function getThemePathPalette() {
+  const styles = getComputedStyle(document.documentElement);
+  const colors = [];
+  for (let i = 0; i < 5; i++) {
+    const v = styles.getPropertyValue(`--path-${i}`).trim();
+    if (v) colors.push(v);
+  }
+  if (colors.length) return colors;
+  return ['#68e3ff', '#a78bfa', '#f472b6', '#60a5fa', '#22d3ee'];
+}
+
+/* ===== Toast, sizing and misc (unchanged) ===== */
 function showToast(msg) {
   if (!toastEl) return;
   toastEl.textContent = msg;
@@ -1188,6 +1670,71 @@ document.addEventListener('click', (evt) => {
     clearAllowedHighlights();
   }
 });
+
+/* ===== Victory overlay helpers ===== */
+function showVictoryOverlay() {
+  if (!victoryOverlay) return;
+  victoryOverlay.classList.remove('hidden');
+  victoryOverlay.setAttribute('aria-hidden', 'false');
+  // focus the button for keyboard users
+  victoryNewGameBtn?.focus();
+}
+
+function hideVictoryOverlay() {
+  if (!victoryOverlay) return;
+  victoryOverlay.classList.add('hidden');
+  victoryOverlay.setAttribute('aria-hidden', 'true');
+}
+
+victoryNewGameBtn?.addEventListener('click', async () => {
+  hideVictoryOverlay();
+  // ensure everything stops and then load new puzzle
+  stopConfettiEmission();
+  fadeOutConfetti(800);
+  stopAllAnimationsAndAudio();
+  await resetGame();
+});
+
+/* ===== New game / reset helpers ===== */
+async function resetGame() {
+  if (DEV) console.log('resetGame: stopping animations and loading new puzzle');
+  stopAllAnimationsAndAudio();
+
+  // Return any placed tokens to their slots and clear board letters
+  for (const [tokenId, tok] of tokens.entries()) {
+    if (tok.placed && tok.currentCellKey) {
+      const cell = boardEl.querySelector(`.cell[data-coord="${tok.currentCellKey}"]`);
+      if (cell) {
+        const charEl = cell.querySelector('.char');
+        if (charEl) charEl.textContent = '';
+        cell.removeAttribute('data-token-id');
+        cell.setAttribute('aria-label', `Row ${cell.dataset.r}, Column ${cell.dataset.c}: empty`);
+      }
+      tok.placed = false;
+      tok.currentCellKey = null;
+    }
+
+    // Put token element back into its slot if possible
+    const slotEl = slotEls.get(tok.slotId);
+    if (slotEl) {
+      if (!slotEl.contains(tok.el)) {
+        slotEl.appendChild(tok.el);
+      }
+      slotEl.classList.remove('empty');
+      slotEl.classList.add('occupied');
+      tok.el.classList.remove('selected');
+    }
+  }
+
+  selectedTokenId = null;
+  clearAllowedHighlights();
+
+  hideVictoryOverlay();
+
+  // Load a fresh puzzle
+  await loadPool();
+  await newPuzzle();
+}
 
 /* ===== Startup ===== */
 await loadPool(); // try to load precomputed puzzles first

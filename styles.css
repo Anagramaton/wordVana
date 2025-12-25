@@ -81,120 +81,119 @@
    and slot tuning for a rich, distinct look.
    ============================================================ */
 
-/* Neon Night (Dark): cool blues + magenta accents */
+/* LUMEN NOIR — High-energy dark theme (deeper contrast + neon accents) */
 [data-theme="dark"] {
-  --bg: #071021;
-  --bg-2: #0c162e;
-  --text: #e6f0ff;
-  --muted: #8aa2c0;
+  --bg: #040914;
+  --bg-2: #0b1226;
+  --text: #ecf4ff;
+  --muted: #9cb5d8;
 
-  /* Playable: deep blue -> electric blue */
-  --fillable-bg-1: #0f2b6b;
-  --fillable-bg-2: #1b3f9c;
-  --fillable-border: #4a89ff;
-  --fillable-shadow: 0 10px 24px rgba(19, 59, 143, .45);
+  /* Playable cells — cobalt -> electric violet */
+  --fillable-bg-1: #0b2c74;
+  --fillable-bg-2: #3c1fa1;
+  --fillable-border: #7ea3ff;
+  --fillable-shadow: 0 14px 32px rgba(30, 64, 170,.55);
 
-  /* Empty: midnight navy with subtle violet dots */
-  --empty-bg-1: #06122e;
-  --empty-bg-2: #081738;
-  --empty-border: #213a73;
-  --empty-shadow: 0 8px 18px rgba(8, 23, 56, .35);
-  --empty-pattern: rgba(167,139,250,.14);
+  /* Empty cells — indigo base w/ cyan pattern */
+  --empty-bg-1: #08142e;
+  --empty-bg-2: #0d1b3d;
+  --empty-border: #2b4f8a;
+  --empty-shadow: 0 10px 22px rgba(8, 20, 46,.45);
+  --empty-pattern: rgba(124,211,255,.22);
 
-  /* Tokens: indigo -> magenta for variety */
-  --token-bg-1: #1a2358;
-  --token-bg-2: #3a1d49;
-  --token-border: #6c5bd9;
-  --token-text: #e6f0ff;
+  /* Tokens — royal purple core + magenta edge */
+  --token-bg-1: #2b2474;
+  --token-bg-2: #7a2d8c;
+  --token-border: #bda8ff;
+  --token-text: #f5f8ff;
 
-  /* Slots: cool blue glass */
-  --slot-border: #2a4f8a;
-  --slot-bg-1: rgba(74,137,255,.12);
-  --slot-bg-2: rgba(0,224,255,.08);
+  /* Slots — glass cyan + violet blend */
+  --slot-border: #7cd3ff;
+  --slot-bg-1: rgba(124,211,255,.26);
+  --slot-bg-2: rgba(167,139,250,.20);
 
-  /* Polished outside-token (dark): jewel purple core + neon rim */
-  --outside-token-bg-1: #24143f;
-  --outside-token-bg-2: #3c2160;
-  --outside-token-border: #66f0ff; /* neon cyan rim */
-  --outside-token-text: #f8fbff;
+  /* Outside tokens — neon jewel gradient */
+  --outside-token-bg-1: #2a1374;
+  --outside-token-bg-2: #ff6bd6;
+  --outside-token-border: #86f3ff;
+  --outside-token-text: #ffffff;
   --outside-slot-inset: 4px;
 
-  /* Accents: cyan + pink */
-  --accent: #00e0ff;
+  /* Accents — cyan fire + hot pink kicker */
+  --accent: #5cf1ff;
   --accent-2: #ff6bd6;
-  --glow: 0 0 0 2px rgba(0,224,255,.55), 0 0 24px rgba(0,224,255,.35);
+  --glow: 0 0 0 2px rgba(92,241,255,.6), 0 0 30px rgba(92,241,255,.4);
 
-  --frame-shadow: 0 36px 90px rgba(0,0,0,.6);
+  --frame-shadow: 0 40px 100px rgba(0,0,0,.65);
 
-  --menu-bg: #0f1c35;
-  --menu-fg: #e6f0ff;
-  --menu-border: #2a4f8a;
-
-  /* Path palette */
-  --path-0: #4a89ff;
-  --path-1: #00e0ff;
+  /* Path lighting — more separation for WOW effect */
+  --path-0: #5cf1ff;
+  --path-1: #a78bfa;
   --path-2: #ff6bd6;
-  --path-3: #86f3ff;
-  --path-4: #7aa8ff;
+  --path-3: #7aa8ff;
+  --path-4: #22e3c8;
 
-  /* stronger border lighting for dark theme */
-  --border-brightness: 1.35;
+  --border-brightness: 1.45;
+  --border-glow-alpha: 0.82;
+}
+
+
+/* CHROMA PAPER — Bright pastel theme w/ bold dual-accent pops */
+[data-theme="light"] {
+  --bg: #f9fbff;
+  --bg-2: #eef3ff;
+  --text: #0c1220;
+  --muted: #5d6682;
+
+  /* Playable cells — arctic blue -> lilac pearl */
+  --fillable-bg-1: #d8e8ff;
+  --fillable-bg-2: #efe0ff;
+  --fillable-border: #8fb3ff;
+  --fillable-shadow: 0 10px 28px rgba(11,108,255,.18);
+
+  /* Empty cells — porcelain surface + soft coral pattern */
+  --empty-bg-1: #ffffff;
+  --empty-bg-2: #f4f7ff;
+  --empty-border: #ccd8ef;
+  --empty-shadow: 0 8px 22px rgba(15,23,42,.14);
+  --empty-pattern: rgba(255,137,169,.16);
+
+  /* Tokens — creamy white core + mist blue rim */
+  --token-bg-1: #ffffff;
+  --token-bg-2: #f2f7ff;
+  --token-border: #b7c7ea;
+  --token-text: #0c1220;
+
+  /* Slots — sky blue + candy pink glass */
+  --slot-border: #9ec2ff;
+  --slot-bg-1: rgba(11,108,255,.18);
+  --slot-bg-2: rgba(255,122,182,.14);
+
+  /* Outside tokens — warm cream + radiant pink ring */
+  --outside-token-bg-1: #fff9fb;
+  --outside-token-bg-2: #ffe6f1;
+  --outside-token-border: #ff6fae;
+  --outside-token-text: #0c1220;
+  --outside-slot-inset: 4px;
+
+  /* Accents — sapphire primary + candy-pink secondary */
+  --accent: #0b6cff;
+  --accent-2: #ff6fae;
+  --glow: 0 0 0 2px rgba(11,108,255,.4), 0 0 28px rgba(11,108,255,.28);
+
+  --frame-shadow: 0 26px 70px rgba(15,23,42,.18);
+
+  /* Path colors — high-contrast pastel rainbow */
+  --path-0: #0b6cff;
+  --path-1: #71a6ff;
+  --path-2: #ff6fae;
+  --path-3: #7cd3ff;
+  --path-4: #8fe3b8;
+
+  --border-brightness: 1.18;
   --border-glow-alpha: 0.78;
 }
 
-/* Porcelain Paper (Light): soft multi-pastels */
-[data-theme="light"] {
-  --bg: #f6f9ff;
-  --bg-2: #e9f0fb;
-  --text: #101423;
-  --muted: #4b5570;
-
-  --fillable-bg-1: #dae7ff;  /* pale blue */
-  --fillable-bg-2: #e7d6ff;  /* pale lavender */
-  --fillable-border: #8fb3ff;
-  --fillable-shadow: 0 8px 24px rgba(11, 108, 255, .15);
-
-  --empty-bg-1: #f7fbff;
-  --empty-bg-2: #eef4ff;
-  --empty-border: #cbd6ee;
-  --empty-shadow: 0 6px 18px rgba(15, 23, 42, .12);
-  --empty-pattern: rgba(247,114,182,.12); /* soft pink dots */
-
-  --token-bg-1: #ffffff;
-  --token-bg-2: #f1f6ff;
-  --token-border: #b7c7ea;
-  --token-text: #101423;
-
-  --slot-border: #cdd8ee;
-  --slot-bg-1: rgba(11,108,255,.14);
-  --slot-bg-2: rgba(167,139,250,.10);
-
-  /* Outside-token (light): soft cream core, warm pink rim */
-  --outside-token-bg-1: #fffafc;
-  --outside-token-bg-2: #fff2f8;
-  --outside-token-border: #ff7ab6;
-  --outside-token-text: #101423;
-  --outside-slot-inset: 4px;
-
-  --accent: #0b6cff;
-  --accent-2: #ff7ab6; /* pink secondary */
-  --glow: 0 0 0 2px rgba(11,108,255,.35), 0 0 24px rgba(11,108,255,.25);
-
-  --frame-shadow: 0 24px 60px rgba(15, 23, 42, .15);
-
-  --menu-bg: #ffffff;
-  --menu-fg: #101423;
-  --menu-border: #cbd6ee;
-
-  --path-0: #0b6cff;
-  --path-1: #71a6ff;
-  --path-2: #ff7ab6;
-  --path-3: #7cd3ff;
-  --path-4: #8fe3c0; /* mint */
-
-  --border-brightness: 1.1;
-  --border-glow-alpha: 0.7;
-}
 
 /* Tritanopia-friendly (Colorblind): blue vs amber */
 [data-theme="colorblind"] {
@@ -1078,3 +1077,79 @@ html.celebrating .slot {
   border-color: color-mix(in srgb, var(--accent-2), transparent 35%);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent), transparent 40%);
 }
+
+/* Playable-tile chase */
+.cell.fillable.tile-lit {
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--path-2), transparent 40%),
+    0 0 36px color-mix(in srgb, var(--path-0), transparent 40%);
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.15) saturate(1.12);
+}
+
+.cell.fillable.tile-lit-1 { opacity: .92; }
+.cell.fillable.tile-lit-2 { opacity: .82; transform: translateY(-1px) scale(1.01); }
+.cell.fillable.tile-lit-3 { opacity: .72; }
+
+/* Solution Tile Letter Chase */
+.char.solution-letter-chase {
+  animation: solutionLetterFade 420ms linear forwards;
+}
+
+@keyframes solutionLetterFade {
+  0%   { opacity: .25; filter: saturate(.6) brightness(.9); }
+  40%  { opacity: 1;   filter: saturate(1.4) brightness(1.25); }
+  100% { opacity: .3;  filter: saturate(.7) brightness(.85); }
+}
+
+/* ============================================================
+   Victory overlay styles (new)
+   ============================================================ */
+
+.victory-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 5000;
+  background: linear-gradient(180deg, rgba(2,6,23,0.4), rgba(2,6,23,0.6));
+  pointer-events: auto;
+}
+.victory-overlay.hidden {
+  display: none;
+}
+.victory-card {
+  width: min(520px, calc(100vw - 48px));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--empty-bg-1), transparent 4%), color-mix(in srgb, var(--empty-bg-2), transparent 4%));
+  border: 1px solid var(--empty-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  text-align: center;
+  box-shadow: 0 18px 48px rgba(0,0,0,.48), var(--frame-shadow);
+}
+.victory-card h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: .02em;
+  color: var(--text);
+}
+.victory-sub {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+.victory-card .modal-close {
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: var(--menu-bg);
+  color: var(--menu-fg);
+  border: 1px solid var(--menu-border);
+  box-shadow: 0 8px 20px rgba(0,0,0,.28);
+}
+.victory-card .modal-close:hover {
+  box-shadow: var(--glow);
+  outline: 2px solid var(--accent);
+}
+
+/* Keep the rest of the file unchanged (all existing theme and component styles). */
