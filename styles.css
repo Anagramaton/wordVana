@@ -696,11 +696,7 @@ body {
    OUTSIDE SLOTS & OUTSIDE TOKENS (styled for strong presence)
    ------------------------------------------------------------ */
 
-/* Responsive outside slot (the receptacle) — scales padding/border for small cells */
-:root {
-  /* fallback responsive inset if theme did not set --outside-slot-inset */
-  --outside-slot-inset-safe: min(6px, calc(var(--cell-size) * 0.08));
-}
+/* Responsive outside slot (the receptacle) — token fills tile, no ring */
 .slot {
   width: var(--cell-size);
   height: var(--cell-size);
@@ -712,33 +708,43 @@ body {
     color-mix(in srgb, var(--slot-bg-1), transparent 6%),
     color-mix(in srgb, var(--slot-bg-2), transparent 6%)
   );
-  /* scaled padding: prefer theme value but clamp to a fraction of cell-size */
-  --slot-pad: min(var(--outside-slot-inset, 4px), calc(var(--cell-size) * 0.08));
+
+  /* Make slot padding very small so token can visually fill the slot.
+     Prefer the theme-provided inset but cap to a small fraction of cell size. */
+  --slot-pad: min(var(--outside-slot-inset, 4px), calc(var(--cell-size) * 0.03));
   padding: var(--slot-pad);
+
   transition: background .15s ease, border-color .12s ease, box-shadow .12s ease, transform .12s ease;
   box-shadow: 0 6px 18px color-mix(in srgb, var(--slot-border), transparent 85%);
 }
 
-/* Outside token (the one sitting in the slot) — fill inner area and scale border */
+/* Outside token (the one sitting in the slot) — no ring, letters fill token */
 .slot .token {
   box-sizing: border-box;
   width: calc(100% - (2 * var(--slot-pad)));
   height: calc(100% - (2 * var(--slot-pad)));
   border-radius: 50%;
-  border: clamp(1px, calc(var(--cell-size) * 0.04), 4px) solid var(--outside-token-border);
+
+  /* Remove visible ring and heavy shadows for outside tokens so they read as solid tiles */
+  border: none;
   background: linear-gradient(145deg, var(--outside-token-bg-1), var(--outside-token-bg-2));
   color: var(--outside-token-text);
   display: grid;
   place-items: center;
   font-weight: var(--glyph-weight);
-  font-size: clamp(calc(var(--min-token) * 0.85), calc(var(--cell-size) * (var(--token-scale) * 0.78)), calc(var(--max-token) * 0.85));
+
+  /* Aggressively scale letters to fill the outside token */
+  font-size: clamp(var(--min-token), calc(var(--cell-size) * 0.64), calc(var(--max-token) * 0.95));
+
   line-height: 1;
   letter-spacing: var(--glyph-tracking);
-  text-shadow: var(--glyph-shadow);
+  text-shadow: none; /* crisper glyphs when letters are large */
   user-select: none;
   cursor: pointer;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--slot-border), transparent 70%);
-  transition: transform .12s ease, box-shadow .14s ease, outline-color .12s ease, filter .12s ease;
+
+  /* Keep token visual lightweight (no heavy shadow) */
+  box-shadow: none;
+  transition: transform .12s ease, filter .12s ease, outline-color .12s ease;
   transform-origin: center;
 }
 

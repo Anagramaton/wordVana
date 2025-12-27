@@ -1626,7 +1626,6 @@ export const WORDS = [
   "gaffe",
   "gaily",
   "gamer",
-  "games",
   "gamma",
   "gamut",
   "gassy",
