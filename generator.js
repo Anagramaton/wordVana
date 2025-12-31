@@ -37,19 +37,16 @@ class Board {
 }
 
 // ===============================
-// ENTRY POINTS (GUARANTEED FEASIBLE)
+// ENTRY POINTS (SINGLE-WAVE)
 // ===============================
 
 /**
- * Synchronous, guaranteed to return a puzzle that:
- * - Has totalLetters <= 4N (N = grid size)
- * - Has a perfect outside-slot assignment (one letter per outside slot)
- * It keeps generating until success (no "generation failed" paths).
+ * Synchronous, guaranteed to return a puzzle.
+ * Single-wave outside slot assignment: at most one letter per outside slot.
  *
  * Options:
- * - difficulty: 'easy' | 'balanced' | 'hard' (affects outside slot assignment ambiguity)
- * - minWordLen, maxWordLen: optional overrides for word length constraints
- * - wordCount: optional override for number of words (default WORD_COUNT)
+ * - difficulty: 'easy' | 'balanced' | 'hard'
+ * - minWordLen, maxWordLen, wordCount
  */
 export function generateFeasiblePuzzle(
   dictionary,
@@ -57,38 +54,32 @@ export function generateFeasiblePuzzle(
     difficulty = 'balanced',
     minWordLen = MIN_WORD_LEN,
     maxWordLen = MAX_WORD_LEN,
-    wordCount = WORD_COUNT
+    wordCount = WORD_COUNT,
   } = {}
 ) {
   for (;;) {
-    const words = pickConnectedWords(dictionary, minWordLen, maxWordLen, wordCount);
+    const words = pickConnectedWords(dictionary, {
+      minWordLen, maxWordLen, wordCount
+    });
     const overlaps = buildOverlapMap(words);
     const board = new Board();
 
-    // Place anchor word at origin horizontally
     placeAnchor(board, words[0]);
 
-    // Backtracking place the rest
     if (!solve(board, words.slice(1), overlaps)) {
+      // Try again with a fresh selection
       continue;
     }
 
     const out = finalize(board); // { grid, letters, words }
-    const N = out.grid.length;
-    const totalLetters = out.letters.size;
 
-    // Capacity: 4N outside slots (L/R on rows, T/B on cols)
-    if (totalLetters > 4 * N) {
-      continue;
-    }
-
-    // Perfect matching from each cell to a unique outside slot
+    // Single-wave assignment (one letter per outside slot)
     const assignment = assignOutsideSlots(out.grid, out.letters, { difficulty });
     if (!assignment) {
+      // Matching failed; fresh attempt (the next selection may match)
       continue;
     }
 
-    // Attach assignment for app consumption
     out.slotAssignment = assignment;
     return out;
   }
@@ -96,12 +87,7 @@ export function generateFeasiblePuzzle(
 
 /**
  * Async variant with periodic yielding to keep UI responsive.
- * Returns { grid, letters, words, slotAssignment, attempts }.
- *
- * Options:
- * - difficulty: 'easy' | 'balanced' | 'hard'
- * - minWordLen, maxWordLen
- * - wordCount
+ * Options mirror generateFeasiblePuzzle plus yieldEvery.
  */
 export async function generateFeasiblePuzzleAsync(
   dictionary,
@@ -110,13 +96,16 @@ export async function generateFeasiblePuzzleAsync(
     difficulty = 'balanced',
     minWordLen = MIN_WORD_LEN,
     maxWordLen = MAX_WORD_LEN,
-    wordCount = WORD_COUNT
+    wordCount = WORD_COUNT,
   } = {}
 ) {
   let attempts = 0;
+
   for (;;) {
     attempts++;
-    const out = generateFeasiblePuzzle(dictionary, { difficulty, minWordLen, maxWordLen, wordCount });
+    const out = generateFeasiblePuzzle(dictionary, {
+      difficulty, minWordLen, maxWordLen, wordCount
+    });
     if (out) return { ...out, attempts };
     if (attempts % yieldEvery === 0) {
       await new Promise(r => setTimeout(r, 0));
@@ -125,11 +114,23 @@ export async function generateFeasiblePuzzleAsync(
 }
 
 // ===============================
-// OUTSIDE SLOT FEASIBILITY (PERFECT MATCHING WITH DIFFICULTY BIAS)
+// OUTSIDE SLOT FEASIBILITY (SINGLE-WAVE)
 // ===============================
+
+/**
+ * Single-wave perfect matching with difficulty bias.
+ * Assigns at most one letter per outside slot.
+ *
+ * Returns:
+ *  {
+ *    byCell: Map(cellKey -> { side, index, id }),
+ *    bySlot: Map(slotId -> cellKey),
+ *    slots: Array<{ id, side, index }>
+ *  }
+ */
 export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = {}) {
   const N = grid.length;
-  const cells = [...letters.keys()]; // ["r,c"]
+  const cells = [...letters.keys()];
   const M = cells.length;
 
   const slots = [];
@@ -141,7 +142,7 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
     slots.push({ id: `T:${c}`, side: 'T', index: c });
     slots.push({ id: `B:${c}`, side: 'B', index: c });
   }
-  const K = slots.length; // 4N
+  const K = slots.length;
   if (M > K) return null;
 
   const slotIndex = new Map();
@@ -151,38 +152,27 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
   const colLen = new Array(N).fill(0);
   for (let r = 0; r < N; r++) {
     for (let c = 0; c < N; c++) {
-      if (grid[r][c] === 1) {
-        rowLen[r]++;
-        colLen[c]++;
-      }
+      if (grid[r][c] === 1) { rowLen[r]++; colLen[c]++; }
     }
   }
 
   function preferredFirstDimension(r, c, i) {
     const rl = rowLen[r], cl = colLen[c];
-    if (difficulty === 'hard') {
-      return rl >= cl ? 'row' : 'col';
-    } else if (difficulty === 'easy') {
-      return rl <= cl ? 'row' : 'col';
-    } else {
-      return (i % 2 === 0) ? 'row' : 'col';
-    }
+    if (difficulty === 'hard') return rl >= cl ? 'row' : 'col';
+    if (difficulty === 'easy') return rl <= cl ? 'row' : 'col';
+    return (i % 2 === 0) ? 'row' : 'col';
   }
 
   const adj = Array.from({ length: M }, () => []);
   for (let u = 0; u < M; u++) {
-    const key = cells[u];
-    const [rStr, cStr] = key.split(',');
+    const [rStr, cStr] = cells[u].split(',');
     const r = Number(rStr), c = Number(cStr);
-    if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || r >= N || c < 0 || c >= N) {
-      return null;
-    }
+    if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || r >= N || c < 0 || c >= N) return null;
 
     const firstDim = preferredFirstDimension(r, c, u);
-    const orderedIds =
-      firstDim === 'row'
-        ? [`L:${r}`, `R:${r}`, `T:${c}`, `B:${c}`]
-        : [`T:${c}`, `B:${c}`, `L:${r}`, `R:${r}`];
+    const orderedIds = firstDim === 'row'
+      ? [`L:${r}`, `R:${r}`, `T:${c}`, `B:${c}`]
+      : [`T:${c}`, `B:${c}`, `L:${r}`, `R:${r}`];
 
     for (const id of orderedIds) {
       const vi = slotIndex.get(id);
@@ -217,9 +207,7 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
     for (const v of adj[u]) {
       const u2 = pairV[v];
       if (u2 === -1 || (dist[u2] === dist[u] + 1 && dfs(u2))) {
-        pairU[u] = v;
-        pairV[v] = u;
-        return true;
+        pairU[u] = v; pairV[v] = u; return true;
       }
     }
     dist[u] = INF;
@@ -249,30 +237,29 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
 // ===============================
 // WORD SELECTION (CONNECTED GRAPH)
 // ===============================
-function pickConnectedWords(dict, minLen = MIN_WORD_LEN, maxLen = MAX_WORD_LEN, wordCount = WORD_COUNT) {
-  const pool = shuffle(dict)
-    .filter(w => w.length >= minLen && w.length <= maxLen);
-
+function pickConnectedWords(
+  dict,
+  {
+    minWordLen = MIN_WORD_LEN,
+    maxWordLen = MAX_WORD_LEN,
+    wordCount = WORD_COUNT,
+  } = {}
+) {
+  const pool = shuffle(dict).filter(w => w.length >= minWordLen && w.length <= maxWordLen);
   if (!pool.length) throw new Error('No words in dictionary range');
 
   const chosen = [pool.pop()];
-
   while (chosen.length < wordCount && pool.length) {
     const next = pool.find(w => chosen.some(c => sharesLetter(c, w)));
     if (!next) break;
     chosen.push(next);
     pool.splice(pool.indexOf(next), 1);
   }
-
-  if (chosen.length < wordCount) {
-    throw new Error('Insufficient overlap');
-  }
+  if (chosen.length < wordCount) throw new Error('Insufficient overlap');
   return chosen;
 }
 
-function sharesLetter(a, b) {
-  return [...a].some(ch => b.includes(ch));
-}
+function sharesLetter(a, b) { return [...a].some(ch => b.includes(ch)); }
 
 // ===============================
 // OVERLAP MAP
@@ -315,11 +302,7 @@ function placeAnchor(board, word) {
 function solve(board, remaining, overlaps) {
   if (!remaining.length) return true;
 
-  // Heuristic: place lower-overlap words first
-  remaining.sort((a, b) =>
-    overlapDegree(a, overlaps) - overlapDegree(b, overlaps)
-  );
-
+  remaining.sort((a, b) => overlapDegree(a, overlaps) - overlapDegree(b, overlaps));
   const word = remaining[0];
 
   for (const placed of board.placements) {
@@ -337,9 +320,7 @@ function solve(board, remaining, overlaps) {
   return false;
 }
 
-function overlapDegree(word, overlaps) {
-  return overlaps.get(word)?.size ?? 0;
-}
+function overlapDegree(word, overlaps) { return overlaps.get(word)?.size ?? 0; }
 
 // ===============================
 // PLACEMENT LOGIC
@@ -347,8 +328,6 @@ function overlapDegree(word, overlaps) {
 function tryPlace(board, word, base, i, j, dir) {
   const baseCell = base.cells[j];
   const newCells = [];
-
-  // Proposed placement coordinates
   for (let k = 0; k < word.length; k++) {
     const r = baseCell.r + (dir === 'V' ? k - i : 0);
     const c = baseCell.c + (dir === 'H' ? k - i : 0);
@@ -363,15 +342,12 @@ function tryPlace(board, word, base, i, j, dir) {
     }
   }
 
-  // Enforce clean ends (no immediate end-cap adjacency)
-  const startR = dir === 'H' ? baseCell.r          : baseCell.r - i;
-  const startC = dir === 'H' ? baseCell.c - i      : baseCell.c;
-  const endR   = dir === 'H' ? baseCell.r          : baseCell.r - i + word.length - 1;
+  const startR = dir === 'H' ? baseCell.r : baseCell.r - i;
+  const startC = dir === 'H' ? baseCell.c - i : baseCell.c;
+  const endR   = dir === 'H' ? baseCell.r : baseCell.r - i + word.length - 1;
   const endC   = dir === 'H' ? baseCell.c - i + word.length - 1 : baseCell.c;
-
   if (!endCapsClear(board, startR, startC, endR, endC, dir)) return false;
 
-  // Commit
   for (const cell of newCells) {
     cell.words.add(word);
     board.addCell(cell);
@@ -383,10 +359,10 @@ function tryPlace(board, word, base, i, j, dir) {
 function endCapsClear(board, startR, startC, endR, endC, dir) {
   if (dir === 'H') {
     if (board.has(startR, startC - 1)) return false;
-    if (board.has(endR,   endC + 1))   return false;
+    if (board.has(endR, endC + 1)) return false;
   } else {
     if (board.has(startR - 1, startC)) return false;
-    if (board.has(endR + 1,   endC))   return false;
+    if (board.has(endR + 1, endC)) return false;
   }
   return true;
 }
@@ -408,7 +384,6 @@ function undo(board, word) {
 // ADJACENCY (DIRECTION-AWARE)
 // ===============================
 function touchesInvalid(board, r, c, dir) {
-  // Disallow orthogonal touching along the side edges for non-overlap positions
   const forbidden =
     dir === 'H'
       ? [[r - 1, c], [r + 1, c]]
@@ -438,7 +413,6 @@ function finalize(board) {
     letters.set(`${r},${c}`, cell.letter);
   }
 
-  // List of words (deduped in placement order)
   const words = [...new Set(board.placements.map(p => p.word))];
   return { grid, letters, words };
 }
@@ -446,6 +420,4 @@ function finalize(board) {
 // ===============================
 // UTILS
 // ===============================
-function shuffle(arr) {
-  return [...arr].sort(() => Math.random() - 0.5);
-}
+function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }

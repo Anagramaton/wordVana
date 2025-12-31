@@ -74,59 +74,57 @@
   /* Border chase brightness multipliers (tunable per theme) */
   --border-brightness: 1;
   --border-glow-alpha: 0.55;
+
+  /* Default (fallback) second-wave outside token colors;
+     themes will override these for distinct per-theme looks. */
+  --outside-wave1-1: #FFD400; /* amber */
+  --outside-wave1-2: #FF7A00; /* orange */
+  --outside-wave-text: #0c1220; /* dark glyph on bright fill */
 }
 
 /* ============================================================
-   Theme palettes – each theme includes polished outside-token
-   and slot tuning for a rich, distinct look.
+   Theme palettes – each theme also sets distinct 2nd-wave colors
    ============================================================ */
 
-/* LUMEN NOIR — High-energy dark theme (deeper contrast + neon accents) */
+/* LUMEN NOIR — High-energy dark theme */
 [data-theme="dark"] {
   --bg: #040914;
   --bg-2: #0b1226;
   --text: #ecf4ff;
   --muted: #9cb5d8;
 
-  /* Playable cells — cobalt -> electric violet */
   --fillable-bg-1: #0b2c74;
   --fillable-bg-2: #3c1fa1;
   --fillable-border: #7ea3ff;
   --fillable-shadow: 0 14px 32px rgba(30, 64, 170,.55);
 
-  /* Empty cells — indigo base w/ cyan pattern */
   --empty-bg-1: #08142e;
   --empty-bg-2: #0d1b3d;
   --empty-border: #2b4f8a;
   --empty-shadow: 0 10px 22px rgba(8, 20, 46,.45);
   --empty-pattern: rgba(124,211,255,.22);
 
-  /* Tokens — royal purple core + magenta edge */
   --token-bg-1: #2b2474;
   --token-bg-2: #7a2d8c;
   --token-border: #bda8ff;
   --token-text: #f5f8ff;
 
-  /* Slots — glass cyan + violet blend */
   --slot-border: #7cd3ff;
   --slot-bg-1: rgba(124,211,255,.26);
   --slot-bg-2: rgba(167,139,250,.20);
 
-  /* Outside tokens — neon jewel gradient */
   --outside-token-bg-1: #2a1374;
   --outside-token-bg-2: #ff6bd6;
   --outside-token-border: #86f3ff;
   --outside-token-text: #ffffff;
   --outside-slot-inset: 4px;
 
-  /* Accents — cyan fire + hot pink kicker */
   --accent: #5cf1ff;
   --accent-2: #ff6bd6;
   --glow: 0 0 0 2px rgba(92,241,255,.6), 0 0 30px rgba(92,241,255,.4);
 
   --frame-shadow: 0 40px 100px rgba(0,0,0,.65);
 
-  /* Path lighting — more separation for WOW effect */
   --path-0: #5cf1ff;
   --path-1: #a78bfa;
   --path-2: #ff6bd6;
@@ -135,55 +133,52 @@
 
   --border-brightness: 1.45;
   --border-glow-alpha: 0.82;
+
+  /* Distinct per-theme 2nd-wave fill */
+  --outside-wave1-1: #FFD400; /* amber */
+  --outside-wave1-2: #FF7A00; /* orange */
+  --outside-wave-text: #0c1220;
 }
 
-
-/* CHROMA PAPER — Bright pastel theme w/ bold dual-accent pops */
+/* CHROMA PAPER — pastel light theme */
 [data-theme="light"] {
   --bg: #f9fbff;
   --bg-2: #eef3ff;
   --text: #0c1220;
   --muted: #5d6682;
 
-  /* Playable cells — arctic blue -> lilac pearl */
   --fillable-bg-1: #d8e8ff;
   --fillable-bg-2: #efe0ff;
   --fillable-border: #8fb3ff;
   --fillable-shadow: 0 10px 28px rgba(11,108,255,.18);
 
-  /* Empty cells — porcelain surface + soft coral pattern */
   --empty-bg-1: #ffffff;
   --empty-bg-2: #f4f7ff;
   --empty-border: #ccd8ef;
   --empty-shadow: 0 8px 22px rgba(15,23,42,.14);
   --empty-pattern: rgba(255,137,169,.16);
 
-  /* Tokens — creamy white core + mist blue rim */
   --token-bg-1: #ffffff;
   --token-bg-2: #f2f7ff;
   --token-border: #b7c7ea;
   --token-text: #0c1220;
 
-  /* Slots — sky blue + candy pink glass */
   --slot-border: #9ec2ff;
   --slot-bg-1: rgba(11,108,255,.18);
   --slot-bg-2: rgba(255,122,182,.14);
 
-  /* Outside tokens — warm cream + radiant pink ring */
   --outside-token-bg-1: #fff9fb;
   --outside-token-bg-2: #ffe6f1;
   --outside-token-border: #ff6fae;
   --outside-token-text: #0c1220;
   --outside-slot-inset: 4px;
 
-  /* Accents — sapphire primary + candy-pink secondary */
   --accent: #0b6cff;
   --accent-2: #ff6fae;
   --glow: 0 0 0 2px rgba(11,108,255,.4), 0 0 28px rgba(11,108,255,.28);
 
   --frame-shadow: 0 26px 70px rgba(15,23,42,.18);
 
-  /* Path colors — high-contrast pastel rainbow */
   --path-0: #0b6cff;
   --path-1: #71a6ff;
   --path-2: #ff6fae;
@@ -192,10 +187,14 @@
 
   --border-brightness: 1.18;
   --border-glow-alpha: 0.78;
+
+  /* Distinct per-theme 2nd-wave fill */
+  --outside-wave1-1: #0B6CFF; /* vivid blue */
+  --outside-wave1-2: #FF6FAE; /* magenta */
+  --outside-wave-text: #0c1220; /* dark text on bright gradient */
 }
 
-
-/* Tritanopia-friendly (Colorblind): blue vs amber */
+/* Tritanopia-friendly (Colorblind) */
 [data-theme="colorblind"] {
   --bg: #0f172a;
   --bg-2: #0c1426;
@@ -211,7 +210,7 @@
   --empty-bg-2: #0c234b;
   --empty-border: #243c6f;
   --empty-shadow: 0 8px 20px rgba(12, 35, 75, .35);
-  --empty-pattern: rgba(255,183,3,.20); /* amber dots */
+  --empty-pattern: rgba(255,183,3,.20);
 
   --token-bg-1: #142239;
   --token-bg-2: #0d1b32;
@@ -222,15 +221,14 @@
   --slot-bg-1: rgba(255,183,3,.20);
   --slot-bg-2: rgba(255,183,3,.10);
 
-  /* Outside-token (colorblind): strong blue core, amber rim for equality */
   --outside-token-bg-1: #07284a;
   --outside-token-bg-2: #0b3c6f;
   --outside-token-border: #ffb703;
   --outside-token-text: #f8fbff;
   --outside-slot-inset: 4px;
 
-  --accent: #ffb703;  /* strong amber */
-  --accent-2: #3b78ff; /* blue secondary */
+  --accent: #ffb703;
+  --accent-2: #3b78ff;
   --glow: 0 0 0 2px rgba(255,183,3,.6), 0 0 26px rgba(255,183,3,.35);
 
   --frame-shadow: 0 28px 72px rgba(0,0,0,.55);
@@ -247,9 +245,14 @@
 
   --border-brightness: 1.15;
   --border-glow-alpha: 0.72;
+
+  /* Distinct per-theme 2nd-wave fill */
+  --outside-wave1-1: #FFB703; /* amber */
+  --outside-wave1-2: #3B78FF; /* blue */
+  --outside-wave-text: #0c1220;
 }
 
-/* Pure Mono (B/W) – ultra clear distinction */
+/* Pure Mono (B/W) */
 [data-theme="bw"] {
   --bg: #000000;
   --bg-2: #111111;
@@ -276,7 +279,6 @@
   --slot-bg-1: rgba(255,255,255,.18);
   --slot-bg-2: rgba(255,255,255,.10);
 
-  /* Outside-token (bw): inversion-friendly high-contrast ring */
   --outside-token-bg-1: #111111;
   --outside-token-bg-2: #222222;
   --outside-token-border: #ffffff;
@@ -301,9 +303,14 @@
 
   --border-brightness: 1.2;
   --border-glow-alpha: 0.9;
+
+  /* Distinct per-theme 2nd-wave fill */
+  --outside-wave1-1: #00E5FF; /* cyan */
+  --outside-wave1-2: #00B8D4; /* deeper cyan */
+  --outside-wave-text: #000000; /* black text for high legibility */
 }
 
-/* High Contrast (Accessibility) – maximum clarity */
+/* High Contrast (Accessibility) */
 [data-theme="high-contrast"] {
   --bg: #000000;
   --bg-2: #000000;
@@ -330,7 +337,6 @@
   --slot-bg-1: rgba(255,251,0,.35);
   --slot-bg-2: rgba(255,251,0,.20);
 
-  /* Outside-token (high-contrast): black core + vivid yellow rim */
   --outside-token-bg-1: #000000;
   --outside-token-bg-2: #000000;
   --outside-token-border: #fffb00;
@@ -355,48 +361,48 @@
 
   --border-brightness: 1.5;
   --border-glow-alpha: 1;
+
+  /* Distinct per-theme 2nd-wave fill */
+  --outside-wave1-1: #FFFB00; /* vivid yellow */
+  --outside-wave1-2: #00E5FF; /* cyan */
+  --outside-wave-text: #000000; /* black text for max contrast */
 }
 
-/* Desert Mirage – oranges, yellows, reds */
+/* Desert Mirage */
 [data-theme="desert"] {
-  --bg: #2b1f14;   /* dark umber */
-  --bg-2: #3a2a1d; /* warm brown */
+  --bg: #2b1f14;
+  --bg-2: #3a2a1d;
   --text: #f7e1c3;
   --muted: #d5b89c;
 
-  /* Playable: burnt orange -> golden amber */
   --fillable-bg-1: #7a3c14;
   --fillable-bg-2: #c2621b;
   --fillable-border: #ffb26a;
   --fillable-shadow: 0 10px 24px rgba(107, 63, 28, .45);
 
-  /* Empty: deep sand -> clay with warm pattern */
   --empty-bg-1: #3a2a1d;
   --empty-bg-2: #2e2319;
   --empty-border: #8a5b35;
   --empty-shadow: 0 8px 20px rgba(46, 35, 25, .35);
-  --empty-pattern: rgba(253,224,71,.22); /* yellow dots */
+  --empty-pattern: rgba(253,224,71,.22);
 
-  /* Tokens: crimson -> coral for contrast */
   --token-bg-1: #8a1e10;
   --token-bg-2: #b43e2a;
   --token-border: #d98c3f;
   --token-text: #f7e1c3;
 
-  /* Slots: amber glass */
   --slot-border: #b57434;
   --slot-bg-1: rgba(255,159,28,.24);
   --slot-bg-2: rgba(253,224,71,.18);
 
-  /* Outside-token (desert): rich terracotta core + soft gold rim */
   --outside-token-bg-1: #7a351f;
   --outside-token-bg-2: #b34a27;
   --outside-token-border: #ffd8a8;
   --outside-token-text: #fff6ec;
   --outside-slot-inset: 4px;
 
-  --accent: #ff9f1c;   /* orange */
-  --accent-2: #ef4444; /* red secondary */
+  --accent: #ff9f1c;
+  --accent-2: #ef4444;
   --glow: 0 0 0 2px rgba(255,159,28,.5), 0 0 28px rgba(255,159,28,.35);
 
   --frame-shadow: 0 26px 70px rgba(26, 18, 12, .65);
@@ -405,56 +411,56 @@
   --menu-fg: #f7e1c3;
   --menu-border: #8a5b35;
 
-  --path-0: #f97316; /* orange */
-  --path-1: #fde047; /* yellow */
-  --path-2: #ef4444; /* red */
-  --path-3: #fb7185; /* coral */
-  --path-4: #f59e0b; /* amber */
+  --path-0: #f97316;
+  --path-1: #fde047;
+  --path-2: #ef4444;
+  --path-3: #fb7185;
+  --path-4: #f59e0b;
 
   --border-brightness: 1.25;
   --border-glow-alpha: 0.75;
+
+  /* Distinct per-theme 2nd-wave fill (cool cyan to stand out on warm board) */
+  --outside-wave1-1: #22D3EE; /* cyan */
+  --outside-wave1-2: #7CD3FF; /* light cyan */
+  --outside-wave-text: #0c1220;
 }
 
-/* Ice Cavern – blues, purples, pinks */
+/* Ice Cavern */
 [data-theme="ice"] {
-  --bg: #0b1020;   /* cold navy */
-  --bg-2: #0f172a; /* deep blue */
+  --bg: #0b1020;
+  --bg-2: #0f172a;
   --text: #e6f0ff;
   --muted: #b6c8e5;
 
-  /* Playable: arctic blue -> indigo */
   --fillable-bg-1: #143a74;
   --fillable-bg-2: #2a2f92;
   --fillable-border: #8fd7ff;
   --fillable-shadow: 0 10px 26px rgba(27, 75, 146, .45);
 
-  /* Empty: glacier blue with pink-lilac pattern */
   --empty-bg-1: #0f223f;
   --empty-bg-2: #10294c;
   --empty-border: #2a4f8a;
   --empty-shadow: 0 8px 20px rgba(16, 41, 76, .35);
-  --empty-pattern: rgba(244,114,182,.22); /* pink dots */
+  --empty-pattern: rgba(244,114,182,.22);
 
-  /* Tokens: lilac -> ice pink */
   --token-bg-1: #4c3aa1;
   --token-bg-2: #7a3aa1;
   --token-border: #b9ecff;
   --token-text: #e6f0ff;
 
-  /* Slots: cyan + lilac glass */
   --slot-border: #7cd3ff;
   --slot-bg-1: rgba(124,211,255,.24);
   --slot-bg-2: rgba(167,139,250,.16);
 
-  /* Outside-token (ice): frosted lilac core with icy cyan rim */
   --outside-token-bg-1: #573aa8;
   --outside-token-bg-2: #ff7ab6;
   --outside-token-border: #b9ecff;
   --outside-token-text: #f6f9ff;
   --outside-slot-inset: 4px;
 
-  --accent: #7cd3ff;   /* cyan */
-  --accent-2: #f472b6; /* pink secondary */
+  --accent: #7cd3ff;
+  --accent-2: #f472b6;
   --glow: 0 0 0 2px rgba(124,211,255,.55), 0 0 28px rgba(124,211,255,.35);
 
   --frame-shadow: 0 28px 72px rgba(14, 28, 56, .55);
@@ -463,56 +469,56 @@
   --menu-fg: #e6f0ff;
   --menu-border: #2a4f8a;
 
-  --path-0: #7cd3ff; /* light blue */
-  --path-1: #a78bfa; /* purple */
-  --path-2: #f472b6; /* pink */
-  --path-3: #60a5fa; /* blue */
-  --path-4: #22d3ee; /* cyan */
+  --path-0: #7cd3ff;
+  --path-1: #a78bfa;
+  --path-2: #f472b6;
+  --path-3: #60a5fa;
+  --path-4: #22d3ee;
 
   --border-brightness: 1.2;
   --border-glow-alpha: 0.7;
+
+  /* Distinct per-theme 2nd-wave fill (warm pop on cool board) */
+  --outside-wave1-1: #FFD400; /* amber */
+  --outside-wave1-2: #FF7A00; /* orange */
+  --outside-wave-text: #0c1220;
 }
 
-/* Forest Canopy – greens, yellows, orange */
+/* Forest Canopy */
 [data-theme="forest"] {
-  --bg: #0f2a1f;   /* deep forest */
-  --bg-2: #0b2017; /* pine */
+  --bg: #0f2a1f;
+  --bg-2: #0b2017;
   --text: #d8f3dc;
   --muted: #a3c9a8;
 
-  /* Playable: spruce green -> jade */
   --fillable-bg-1: #105f3d;
   --fillable-bg-2: #1a8c5b;
   --fillable-border: #8fe3c0;
   --fillable-shadow: 0 10px 26px rgba(16, 95, 61, .45);
 
-  /* Empty: dark moss with amber pattern */
   --empty-bg-1: #0d2e23;
   --empty-bg-2: #0f382a;
   --empty-border: #287255;
   --empty-shadow: 0 8px 20px rgba(13, 46, 35, .35);
-  --empty-pattern: rgba(245,158,11,.22); /* amber dots */
+  --empty-pattern: rgba(245,158,11,.22);
 
-  /* Tokens: olive -> amber for contrast */
   --token-bg-1: #2b5a3e;
   --token-bg-2: #8a5b1c;
   --token-border: #95d5b2;
   --token-text: #d8f3dc;
 
-  /* Slots: mint + amber glass */
   --slot-border: #95d5b2;
   --slot-bg-1: rgba(149,213,178,.24);
   --slot-bg-2: rgba(245,158,11,.16);
 
-  /* Outside-token (forest): deep emerald core + warm amber rim */
   --outside-token-bg-1: #0f3f2f;
   --outside-token-bg-2: #2b7a54;
   --outside-token-border: #ffd79a;
   --outside-token-text: #eaf7ee;
   --outside-slot-inset: 4px;
 
-  --accent: #95d5b2;   /* mint green */
-  --accent-2: #f59e0b; /* amber secondary */
+  --accent: #95d5b2;
+  --accent-2: #f59e0b;
   --glow: 0 0 0 2px rgba(149,213,178,.55), 0 0 28px rgba(149,213,178,.35);
 
   --frame-shadow: 0 28px 72px rgba(5, 25, 18, .55);
@@ -521,14 +527,19 @@
   --menu-fg: #d8f3dc;
   --menu-border: #287255;
 
-  --path-0: #22c55e; /* green */
-  --path-1: #84cc16; /* yellow-green */
-  --path-2: #f59e0b; /* amber */
-  --path-3: #10b981; /* teal-green */
-  --path-4: #65a30d; /* olive */
+  --path-0: #22c55e;
+  --path-1: #84cc16;
+  --path-2: #f59e0b;
+  --path-3: #10b981;
+  --path-4: #65a30d;
 
   --border-brightness: 1.18;
   --border-glow-alpha: 0.7;
+
+  /* Distinct per-theme 2nd-wave fill (pink tones that pop on green) */
+  --outside-wave1-1: #FF6FAE; /* magenta */
+  --outside-wave1-2: #FB7185; /* coral-pink */
+  --outside-wave-text: #0c1220;
 }
 
 /* ============================================================
@@ -548,7 +559,7 @@ body {
     radial-gradient(1200px 600px at 12% 0%, var(--bg-2) 0%, var(--bg) 60%, var(--bg) 100%);
 }
 
-/* Controls overlay (remove blur to avoid dropdown contrast issues) */
+/* Controls overlay */
 .theme-select-overlay {
   position: fixed;
   top: var(--outer-margin);
@@ -562,8 +573,6 @@ body {
   color: var(--muted);
   font-weight: 600;
 }
-
-/* High-contrast native select and option styling */
 .theme-select-overlay select {
   color: var(--menu-fg);
   background: var(--menu-bg);
@@ -571,7 +580,7 @@ body {
   border-radius: 10px;
   padding: 6px 10px;
   box-shadow: 0 6px 14px rgba(0,0,0,.25);
-  appearance: auto; /* let OS render the dropdown */
+  appearance: auto;
 }
 .theme-select-overlay select:focus {
   outline: 2px solid var(--accent);
@@ -579,14 +588,14 @@ body {
 }
 .theme-select-overlay select option {
   color: var(--menu-fg);
-  background: var(--menu-bg); /* improves Windows dropdown contrast */
+  background: var(--menu-bg);
 }
 
-/* Game area aligned toward the top */
+/* Game area */
 .game {
   position: relative;
   width: 100vw;
-  height: 100dvh; /* use dynamic viewport height on mobile */
+  height: 100dvh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -639,8 +648,6 @@ body {
   cursor: default;
   position: relative;
 }
-
-/* Playable cells: bold color, solid border, stronger shadow */
 .cell.fillable {
   background: linear-gradient(150deg, var(--fillable-bg-1), var(--fillable-bg-2));
   border: 1px solid var(--fillable-border);
@@ -650,8 +657,6 @@ body {
   transform: translateY(-1px);
   box-shadow: 0 12px 26px rgba(0,0,0,.30), inset 0 0 0 1px color-mix(in srgb, var(--accent), transparent 25%);
 }
-
-/* Empty cells: muted color, dashed border, dotted pattern overlay */
 .cell.empty {
   background:
     linear-gradient(150deg, var(--empty-bg-1), var(--empty-bg-2)),
@@ -673,7 +678,7 @@ body {
   text-shadow: var(--glyph-shadow);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  transition: transform .12s ease, opacity .12s ease; /* for placement pop */
+  transition: transform .12s ease, opacity .12s ease;
 }
 
 /* Borders hold outside slots */
@@ -693,10 +698,9 @@ body {
 }
 
 /* ------------------------------------------------------------
-   OUTSIDE SLOTS & OUTSIDE TOKENS (styled for strong presence)
+   OUTSIDE SLOTS & OUTSIDE TOKENS
    ------------------------------------------------------------ */
 
-/* Responsive outside slot (the receptacle) — token fills tile, no ring */
 .slot {
   width: var(--cell-size);
   height: var(--cell-size);
@@ -708,48 +712,42 @@ body {
     color-mix(in srgb, var(--slot-bg-1), transparent 6%),
     color-mix(in srgb, var(--slot-bg-2), transparent 6%)
   );
-
-  /* Make slot padding very small so token can visually fill the slot.
-     Prefer the theme-provided inset but cap to a small fraction of cell size. */
   --slot-pad: min(var(--outside-slot-inset, 4px), calc(var(--cell-size) * 0.03));
   padding: var(--slot-pad);
-
   transition: background .15s ease, border-color .12s ease, box-shadow .12s ease, transform .12s ease;
   box-shadow: 0 6px 18px color-mix(in srgb, var(--slot-border), transparent 85%);
 }
 
-/* Outside token (the one sitting in the slot) — no ring, letters fill token */
 .slot .token {
   box-sizing: border-box;
   width: calc(100% - (2 * var(--slot-pad)));
   height: calc(100% - (2 * var(--slot-pad)));
   border-radius: 50%;
-
-  /* Remove visible ring and heavy shadows for outside tokens so they read as solid tiles */
   border: none;
   background: linear-gradient(145deg, var(--outside-token-bg-1), var(--outside-token-bg-2));
   color: var(--outside-token-text);
   display: grid;
   place-items: center;
   font-weight: var(--glyph-weight);
-
-  /* Aggressively scale letters to fill the outside token */
   font-size: clamp(var(--min-token), calc(var(--cell-size) * 0.64), calc(var(--max-token) * 0.95));
-
   line-height: 1;
   letter-spacing: var(--glyph-tracking);
-  text-shadow: none; /* crisper glyphs when letters are large */
+  text-shadow: none;
   user-select: none;
   cursor: pointer;
-
-  /* Keep token visual lightweight (no heavy shadow) */
   box-shadow: none;
   transition: transform .12s ease, filter .12s ease, outline-color .12s ease;
   transform-origin: center;
+  position: relative;
 }
 
-/* Keep original (in-board) token shape/rules for when tokens are rendered outside the slot area
-   or used as full-size interactive elements — the .slot .token selector above overrides this. */
+/* Theme-specific 2nd wave color (data-wave="1") */
+.slot .token[data-wave="1"] {
+  background: linear-gradient(145deg, var(--outside-wave1-1), var(--outside-wave1-2));
+  color: var(--outside-wave-text);
+}
+
+/* In-board token styling (unchanged) */
 .token {
   width: calc(var(--cell-size) - 2px);
   height: calc(var(--cell-size) - 2px);
@@ -805,41 +803,25 @@ body {
   z-index: 2000;
 }
 
-/* Bottom-corner ellipsis (settings entry point) */
+/* Settings entry button */
 .ellipsis-btn {
   position: fixed;
   bottom: 14px;
-  right: 14px; /* change to left if desired */
+  right: 14px;
   z-index: 100;
-
   background: none;
   border: none;
   padding: 4px 6px;
-
   font-size: 22px;
   font-weight: 700;
   line-height: 1;
-
   color: rgba(255,255,255,.45);
   cursor: pointer;
-
   transition: opacity .12s ease, transform .12s ease;
 }
-
-.ellipsis-btn:hover {
-  opacity: 1;
-  transform: translateY(-1px);
-}
-
-.ellipsis-btn:focus {
-  outline: none;
-  opacity: 1;
-}
-
-.ellipsis-btn.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
+.ellipsis-btn:hover { opacity: 1; transform: translateY(-1px); }
+.ellipsis-btn:focus { outline: none; opacity: 1; }
+.ellipsis-btn.hidden { opacity: 0; pointer-events: none; }
 
 /* Modal */
 .modal-backdrop {
@@ -853,9 +835,7 @@ body {
   backdrop-filter: blur(2px);
   padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
-.modal-backdrop.open {
-  display: flex;
-}
+.modal-backdrop.open { display: flex; }
 .modal {
   width: min(720px, calc(100vw - 40px));
   max-height: min(80vh, 720px);
@@ -873,9 +853,7 @@ body {
   border-bottom: 1px dashed var(--empty-border);
   padding: 12px 16px;
 }
-.modal-body {
-  padding: 12px 16px 18px;
-}
+.modal-body { padding: 12px 16px 18px; }
 .modal-close {
   border: 1px solid var(--menu-border);
   border-radius: 8px;
@@ -892,19 +870,9 @@ body {
   outline: 2px solid var(--accent);
 }
 
-/* Settings modal form layout */
-#settingsModal .modal-body {
-  display: grid;
-  gap: 14px;
-}
-
-#settingsModal label {
-  display: grid;
-  gap: 6px;
-  font-weight: 600;
-  color: var(--text);
-}
-
+/* Settings modal form */
+#settingsModal .modal-body { display: grid; gap: 14px; }
+#settingsModal label { display: grid; gap: 6px; font-weight: 600; color: var(--text); }
 #settingsModal select {
   color: var(--menu-fg);
   background: var(--menu-bg);
@@ -913,7 +881,6 @@ body {
   padding: 8px 10px;
   box-shadow: 0 6px 14px rgba(0,0,0,.25);
 }
-
 #settingsModal hr {
   border: none;
   border-top: 1px dashed var(--empty-border);
@@ -921,10 +888,9 @@ body {
 }
 
 /* ============================================================
-   Rich multi-color path highlight system
+   Path highlight system
    ============================================================ */
 
-/* Allow .path-* to set the current color via --path-color */
 .cell.allowed { --path-color: var(--accent); }
 .cell.allowed.path-0 { --path-color: var(--path-0); }
 .cell.allowed.path-1 { --path-color: var(--path-1); }
@@ -932,7 +898,6 @@ body {
 .cell.allowed.path-3 { --path-color: var(--path-3); }
 .cell.allowed.path-4 { --path-color: var(--path-4); }
 
-/* Allowed-drop preview styling using --path-color */
 .cell.allowed {
   outline: 2px solid color-mix(in srgb, var(--path-color), transparent 40%);
   outline-offset: -2px;
@@ -953,7 +918,7 @@ body {
   pointer-events: none;
 }
 
-/* Tiny "pop" when a character is placed (paired with app.js) */
+/* Tiny "pop" on placement */
 @keyframes char-pop {
   0% { transform: scale(.86); opacity: .6; }
   100% { transform: scale(1); opacity: 1; }
@@ -1001,7 +966,7 @@ html.celebrating .board::after {
   background-clip: text;
   color: transparent;
   animation: char-gradient-sweep 1.6s ease-in-out infinite;
-  text-shadow: none; /* cleaner look during celebration */
+  text-shadow: none;
 }
 @keyframes char-gradient-sweep {
   0% { background-position: 0% 50%; }
@@ -1042,26 +1007,19 @@ html.celebrating .slot {
   transform: translateY(-2px) scale(1.02);
   filter: brightness(1.15) saturate(1.12);
 }
-
 .cell.fillable.tile-lit-1 { opacity: .92; }
 .cell.fillable.tile-lit-2 { opacity: .82; transform: translateY(-1px) scale(1.01); }
 .cell.fillable.tile-lit-3 { opacity: .72; }
 
 /* Solution Tile Letter Chase */
-.char.solution-letter-chase {
-  animation: solutionLetterFade 420ms linear forwards;
-}
-
+.char.solution-letter-chase { animation: solutionLetterFade 420ms linear forwards; }
 @keyframes solutionLetterFade {
   0%   { opacity: .25; filter: saturate(.6) brightness(.9); }
   40%  { opacity: 1;   filter: saturate(1.4) brightness(1.25); }
   100% { opacity: .3;  filter: saturate(.7) brightness(.85); }
 }
 
-/* ============================================================
-   Victory overlay styles (new)
-   ============================================================ */
-
+/* Victory overlay */
 .victory-overlay {
   position: fixed;
   inset: 0;
@@ -1071,9 +1029,7 @@ html.celebrating .slot {
   background: linear-gradient(180deg, rgba(2,6,23,0.4), rgba(2,6,23,0.6));
   pointer-events: auto;
 }
-.victory-overlay.hidden {
-  display: none;
-}
+.victory-overlay.hidden { display: none; }
 .victory-card {
   width: min(520px, calc(100vw - 48px));
   background: linear-gradient(180deg, color-mix(in srgb, var(--empty-bg-1), transparent 4%), color-mix(in srgb, var(--empty-bg-2), transparent 4%));
@@ -1108,4 +1064,68 @@ html.celebrating .slot {
   outline: 2px solid var(--accent);
 }
 
-/* Keep the rest of the file unchanged (all existing theme and component styles). */
+/* Wave color cycling for outside tokens.
+   Each wave gets a distinct background color using theme path palette fallbacks.
+   Add this block near the end of your stylesheet so it overrides base token styles. */
+
+:root {
+  /* Use theme path palette if available; provide sensible fallbacks */
+  --wave-0: var(--path-0, #60a5fa); /* blue */
+  --wave-1: var(--path-1, #22d3ee); /* cyan */
+  --wave-2: var(--path-2, #a78bfa); /* purple */
+  --wave-3: var(--path-3, #f472b6); /* pink */
+  --wave-4: var(--path-4, #68e3ff); /* light blue */
+  --wave-5: #fbbf24;               /* amber (extra if more than 5 waves) */
+
+  /* Token foreground and border for good contrast */
+  --wave-token-fg: var(--on-accent, #0b1020);
+  --wave-token-border: rgba(0, 0, 0, 0.28);
+}
+
+/* First wave (data-wave="0") — you may already style this; these ensure theme consistency */
+.slot .token[data-wave="0"] {
+  background-color: var(--wave-0);
+  color: var(--wave-token-fg);
+  border-color: var(--wave-token-border);
+}
+
+/* Subsequent waves get distinct colors */
+.slot .token[data-wave="1"] {
+  background-color: var(--wave-1);
+  color: var(--wave-token-fg);
+  border-color: var(--wave-token-border);
+}
+
+.slot .token[data-wave="2"] {
+  background-color: var(--wave-2);
+  color: var(--wave-token-fg);
+  border-color: var(--wave-token-border);
+}
+
+.slot .token[data-wave="3"] {
+  background-color: var(--wave-3);
+  color: var(--wave-token-fg);
+  border-color: var(--wave-token-border);
+}
+
+.slot .token[data-wave="4"] {
+  background-color: var(--wave-4);
+  color: var(--wave-token-fg);
+  border-color: var(--wave-token-border);
+}
+
+/* Optional: a sixth distinct color if you ever hit many waves */
+.slot .token[data-wave="5"] {
+  background-color: var(--wave-5);
+  color: var(--wave-token-fg);
+  border-color: var(--wave-token-border);
+}
+
+/* Optional subtle ring/shadow to improve legibility across themes */
+.slot .token[data-wave] {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 0 1px var(--wave-token-border),
+    0 6px 14px rgba(0, 0, 0, 0.22);
+}
+/* End of file */
