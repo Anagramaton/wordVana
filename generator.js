@@ -37,16 +37,19 @@ class Board {
 }
 
 // ===============================
-// ENTRY POINTS (SINGLE-WAVE)
+// ENTRY POINTS (GUARANTEED FEASIBLE)
 // ===============================
 
 /**
  * Synchronous, guaranteed to return a puzzle.
- * Single-wave outside slot assignment: at most one letter per outside slot.
+ * This version supports multi-wave outside slot assignment so boards may contain
+ * more letters than a single perimeter (4N) exposes at once.
  *
  * Options:
  * - difficulty: 'easy' | 'balanced' | 'hard'
  * - minWordLen, maxWordLen, wordCount
+ * - minLetters: target minimum letters to push density (use for large; 0 disables)
+ * - maxWordCountCap: defensive cap when adapting wordCount upward
  */
 export function generateFeasiblePuzzle(
   dictionary,
@@ -55,11 +58,16 @@ export function generateFeasiblePuzzle(
     minWordLen = MIN_WORD_LEN,
     maxWordLen = MAX_WORD_LEN,
     wordCount = WORD_COUNT,
+    minLetters = 0,
+    maxWordCountCap = WORD_COUNT + 8, // allow bumping up to ~19 by default
   } = {}
 ) {
+  // We adaptively adjust wordCount to meet minLetters without exceeding a sane cap.
+  let adaptiveWordCount = Math.max(1, wordCount);
+
   for (;;) {
     const words = pickConnectedWords(dictionary, {
-      minWordLen, maxWordLen, wordCount
+      minWordLen, maxWordLen, wordCount: adaptiveWordCount
     });
     const overlaps = buildOverlapMap(words);
     const board = new Board();
@@ -72,9 +80,21 @@ export function generateFeasiblePuzzle(
     }
 
     const out = finalize(board); // { grid, letters, words }
+    const N = out.grid.length;
+    const capacitySinglePerimeter = 4 * N;
+    const totalLetters = out.letters.size;
 
-    // Single-wave assignment (one letter per outside slot)
-    const assignment = assignOutsideSlots(out.grid, out.letters, { difficulty });
+    // If caller set a density target, allow aiming above a single perimeter using waves.
+    if (minLetters > 0 && totalLetters < Math.min(minLetters, capacitySinglePerimeter * 4)) {
+      // Try adding words (up to cap) to raise unique letters
+      if (adaptiveWordCount < maxWordCountCap) {
+        adaptiveWordCount++;
+      }
+      continue;
+    }
+
+    // Multi-wave assignment (each slot can feed several letters in order)
+    const assignment = assignOutsideSlotsInWaves(out.grid, out.letters, { difficulty });
     if (!assignment) {
       // Matching failed; fresh attempt (the next selection may match)
       continue;
@@ -97,14 +117,18 @@ export async function generateFeasiblePuzzleAsync(
     minWordLen = MIN_WORD_LEN,
     maxWordLen = MAX_WORD_LEN,
     wordCount = WORD_COUNT,
+    minLetters = 0,
+    maxWordCountCap = WORD_COUNT + 8,
   } = {}
 ) {
   let attempts = 0;
+  let adaptiveWordCount = Math.max(1, wordCount);
 
   for (;;) {
     attempts++;
     const out = generateFeasiblePuzzle(dictionary, {
-      difficulty, minWordLen, maxWordLen, wordCount
+      difficulty, minWordLen, maxWordLen, wordCount: adaptiveWordCount,
+      minLetters, maxWordCountCap
     });
     if (out) return { ...out, attempts };
     if (attempts % yieldEvery === 0) {
@@ -114,19 +138,12 @@ export async function generateFeasiblePuzzleAsync(
 }
 
 // ===============================
-// OUTSIDE SLOT FEASIBILITY (SINGLE-WAVE)
+// OUTSIDE SLOT FEASIBILITY
 // ===============================
 
 /**
- * Single-wave perfect matching with difficulty bias.
- * Assigns at most one letter per outside slot.
- *
- * Returns:
- *  {
- *    byCell: Map(cellKey -> { side, index, id }),
- *    bySlot: Map(slotId -> cellKey),
- *    slots: Array<{ id, side, index }>
- *  }
+ * Original single-wave perfect matching with difficulty bias.
+ * Kept for fallback or comparison; not used by generateFeasiblePuzzle anymore.
  */
 export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = {}) {
   const N = grid.length;
@@ -232,6 +249,155 @@ export function assignOutsideSlots(grid, letters, { difficulty = 'balanced' } = 
     bySlot.set(slot.id, key);
   }
   return { byCell, bySlot, slots };
+}
+
+/**
+ * Multi-wave perfect matchings with difficulty bias.
+ * Each wave assigns at most one letter per outside slot; repeats until all letters are assigned.
+ *
+ * Returns:
+ *  {
+ *    byCell: Map(cellKey -> { side, index, id, wave }),
+ *    bySlot: Map(slotId -> firstCellKeyOrUndefined), // for compatibility
+ *    slotQueues: Map(slotId -> [cellKey1, cellKey2, ...]),
+ *    slots: Array<{ id, side, index }>
+ *  }
+ */
+export function assignOutsideSlotsInWaves(grid, letters, { difficulty = 'balanced' } = {}) {
+  const N = grid.length;
+  const cellsAll = [...letters.keys()];
+
+  const slots = [];
+  for (let r = 0; r < N; r++) {
+    slots.push({ id: `L:${r}`, side: 'L', index: r });
+    slots.push({ id: `R:${r}`, side: 'R', index: r });
+  }
+  for (let c = 0; c < N; c++) {
+    slots.push({ id: `T:${c}`, side: 'T', index: c });
+    slots.push({ id: `B:${c}`, side: 'B', index: c });
+  }
+  const K = slots.length;
+  const slotIndex = new Map();
+  slots.forEach((s, i) => slotIndex.set(s.id, i));
+
+  // Row/col lengths for difficulty bias
+  const rowLen = new Array(N).fill(0);
+  const colLen = new Array(N).fill(0);
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (grid[r][c] === 1) { rowLen[r]++; colLen[c]++; }
+  }
+  function preferredFirstDimension(r, c, i) {
+    const rl = rowLen[r], cl = colLen[c];
+    if (difficulty === 'hard') return rl >= cl ? 'row' : 'col';
+    if (difficulty === 'easy') return rl <= cl ? 'row' : 'col';
+    return (i % 2 === 0) ? 'row' : 'col';
+  }
+
+  // Build adjacency per cell once (ordered slot indices)
+  const adjGlobal = [];
+  for (let u = 0; u < cellsAll.length; u++) {
+    const [rStr, cStr] = cellsAll[u].split(',');
+    const r = Number(rStr), c = Number(cStr);
+    if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || r >= N || c < 0 || c >= N) {
+      throw new Error('Invalid cell key in letters');
+    }
+    const firstDim = preferredFirstDimension(r, c, u);
+    const orderedIds = firstDim === 'row'
+      ? [`L:${r}`, `R:${r}`, `T:${c}`, `B:${c}`]
+      : [`T:${c}`, `B:${c}`, `L:${r}`, `R:${r}`];
+    const idxs = [];
+    for (const id of orderedIds) {
+      const vi = slotIndex.get(id);
+      if (vi !== undefined) idxs.push(vi);
+    }
+    adjGlobal.push(idxs);
+  }
+
+  const byCell = new Map();
+  const slotQueues = new Map(slots.map(s => [s.id, []]));
+
+  // Hopcroft–Karp per wave across the remaining cells
+  let remaining = cellsAll.map((key, u) => ({ key, u }));
+  let wave = 0;
+  const INF = 1e9;
+
+  while (remaining.length) {
+    // Map wave-local U to global U
+    const uToGlobal = remaining.map(r => r.u);
+    const M = uToGlobal.length;
+
+    const pairU = new Array(M).fill(-1);
+    const pairV = new Array(K).fill(-1);
+    const dist = new Array(M).fill(0);
+
+    function bfs() {
+      const q = [];
+      for (let u = 0; u < M; u++) {
+        if (pairU[u] === -1) { dist[u] = 0; q.push(u); }
+        else dist[u] = INF;
+      }
+      let found = false;
+      for (let qi = 0; qi < q.length; qi++) {
+        const u = q[qi];
+        for (const v of adjGlobal[uToGlobal[u]]) {
+          const u2 = pairV[v];
+          if (u2 === -1) found = true;
+          else if (dist[u2] === INF) { dist[u2] = dist[u] + 1; q.push(u2); }
+        }
+      }
+      return found;
+    }
+
+    function dfs(u) {
+      for (const v of adjGlobal[uToGlobal[u]]) {
+        const u2 = pairV[v];
+        if (u2 === -1 || (dist[u2] === dist[u] + 1 && dfs(u2))) {
+          pairU[u] = v; pairV[v] = u; return true;
+        }
+      }
+      dist[u] = INF;
+      return false;
+    }
+
+    // Compute matching for this wave
+    let matching = 0;
+    while (bfs()) {
+      for (let u = 0; u < M; u++) {
+        if (pairU[u] === -1 && dfs(u)) matching++;
+      }
+    }
+
+    if (matching === 0) {
+      // Should not happen with 4 connections per cell; break to avoid infinite loop.
+      break;
+    }
+
+    // Record matches for this wave
+    const matchedU = [];
+    for (let u = 0; u < M; u++) {
+      const v = pairU[u];
+      if (v !== -1) {
+        const slot = slots[v];
+        const cellKey = remaining[u].key;
+        slotQueues.get(slot.id).push(cellKey);
+        byCell.set(cellKey, { side: slot.side, index: slot.index, id: slot.id, wave });
+        matchedU.push(u);
+      }
+    }
+
+    // Remove matched from remaining (remove high indexes first)
+    matchedU.sort((a, b) => b - a).forEach(u => remaining.splice(u, 1));
+    wave++;
+  }
+
+  // Compatibility: map first of each queue into bySlot for existing UI paths
+  const bySlot = new Map();
+  for (const s of slots) {
+    const q = slotQueues.get(s.id);
+    if (q?.length) bySlot.set(s.id, q[0]);
+  }
+
+  return { byCell, bySlot, slotQueues, slots };
 }
 
 // ===============================
