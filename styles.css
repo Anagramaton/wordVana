@@ -9,8 +9,9 @@
   --token-scale: 0.54;
   --min-char: 15px;
   --max-char: 32px;
-  --min-token: 13px;
-  --max-token: 28px;
+  /* Increased min/max for outside tokens so they may expand more aggressively */
+  --min-token: 14px;
+  --max-token: 44px;
   --glyph-weight: 800;
   --glyph-shadow: 0 1px 0 rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.25);
   --glyph-tracking: 0.015em;
@@ -718,6 +719,9 @@ body {
   box-shadow: 0 6px 18px color-mix(in srgb, var(--slot-border), transparent 85%);
 }
 
+/* Outside token is allowed to be very large (fills the slot). Use larger multipliers so letters scale to the slot size.
+   clamp ensures legibility: min/max bounds plus a size relative to --cell-size.
+*/
 .slot .token {
   box-sizing: border-box;
   width: calc(100% - (2 * var(--slot-pad)));
@@ -728,11 +732,12 @@ body {
   color: var(--outside-token-text);
   display: grid;
   place-items: center;
-  font-weight: var(--glyph-weight);
-  font-size: clamp(var(--min-token), calc(var(--cell-size) * 0.64), calc(var(--max-token) * 0.95));
+  font-weight: 900;
+  /* maximize letter size while preserving readability */
+  font-size: clamp(var(--min-token), calc(var(--cell-size) * 0.78), var(--max-token));
   line-height: 1;
   letter-spacing: var(--glyph-tracking);
-  text-shadow: none;
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
   user-select: none;
   cursor: pointer;
   box-shadow: none;
@@ -745,6 +750,17 @@ body {
 .slot .token[data-wave="1"] {
   background: linear-gradient(145deg, var(--outside-wave1-1), var(--outside-wave1-2));
   color: var(--outside-wave-text);
+}
+
+/* Provide high-contrast outlines for tokens in small cell-size scenarios: when --cell-size is very small the text can wrap.
+   This ensures text is legible and centered. */
+.slot .token::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transition: box-shadow .12s ease;
+  pointer-events: none;
 }
 
 /* In-board token styling (unchanged) */

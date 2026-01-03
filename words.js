@@ -2822,7 +2822,6 @@ export const WORDS = [
   "tenth",
   "tepee",
   "tepid",
-  "terms",
   "terra",
   "terse",
   "testy",

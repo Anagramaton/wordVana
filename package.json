@@ -1,9 +1,9 @@
 {
-  "name": "wordvana",
-  "private": true,
+  "name": "wordvana-daily-generator",
+  "version": "1.0.0",
+  "description": "Pre-generate Wordvana daily puzzles",
   "type": "module",
   "scripts": {
-    "build:puzzles": "node scripts/generate-puzzles.mjs --all --count 50",
-    "build:puzzles:large": "node scripts/generate-puzzles.mjs --size large --difficulty balanced --count 50"
+    "generate-daily": "node generate-daily.js"
   }
 }
