@@ -427,63 +427,98 @@
   --outside-wave-text: #0c1220;
 }
 
-/* Ice Cavern */
+/* Glacial Day — expanded "lots of ice" palette
+   Replaces the previous [data-theme="ice"] block with a richer set of icy hues,
+   more distinct wave colors, and subtle frosted texture.
+*/
 [data-theme="ice"] {
-  --bg: #0b1020;
-  --bg-2: #0f172a;
-  --text: #e6f0ff;
-  --muted: #b6c8e5;
+  /* Canvas: very pale cool sky with a hint of teal for depth */
+  --bg: #aab8bb;            /* nearly white, cool */
+  --bg-2: #c7ccce;          /* slightly stronger pale aqua */
 
-  --fillable-bg-1: #143a74;
-  --fillable-bg-2: #2a2f92;
-  --fillable-border: #8fd7ff;
-  --fillable-shadow: 0 10px 26px rgba(27, 75, 146, .45);
+  /* Typography */
+  --text: #e5eff1;          /* deep slate-teal for high contrast, still cool */
+  --muted: #4a7b87;         /* muted cool teal for secondary copy */
 
-  --empty-bg-1: #0f223f;
-  --empty-bg-2: #10294c;
-  --empty-border: #2a4f8a;
-  --empty-shadow: 0 8px 20px rgba(16, 41, 76, .35);
-  --empty-pattern: rgba(244,114,182,.22);
+  /* Fillable (playable) cells — layered icy gradients that read like frosted glass */
+  --fillable-bg-1: #6d848a; /* highlight / very bright */
+  --fillable-bg-2: #5d90ae; /* cool underside */
+  --fillable-border: #9feeff;/* crisp cyan bevel */
+  --fillable-shadow: 0 12px 28px rgba(12,72,96,0.06); /* cool, low-contrast shadow */
 
-  --token-bg-1: #4c3aa1;
-  --token-bg-2: #7a3aa1;
-  --token-border: #b9ecff;
-  --token-text: #e6f0ff;
+  /* Empty / background tiles (subtle, almost-white) */
+  --empty-bg-1: #ffffff;
+  --empty-bg-2: #f6fbff;
+  --empty-border: #dbeff6;
+  --empty-shadow: 0 8px 20px rgba(6,32,40,0.05);
+  --empty-pattern: rgba(6,32,40,0.03);
 
-  --slot-border: #7cd3ff;
-  --slot-bg-1: rgba(124,211,255,.24);
-  --slot-bg-2: rgba(167,139,250,.16);
+  /* In-board tokens (placed tokens) — luminous, pale surfaces with dark glyphs */
+  --token-bg-1: #ffffff;
+  --token-bg-2: #eaffff;
+  --token-border: #d0f6ff;
+  --token-text: #02282a;    /* dark teal for clear legibility on bright tokens */
+  --token-shadow: 0 8px 18px rgba(3,36,45,0.06);
 
-  --outside-token-bg-1: #573aa8;
-  --outside-token-bg-2: #ff7ab6;
-  --outside-token-border: #b9ecff;
-  --outside-token-text: #f6f9ff;
+  /* Slot container styling (perimeter) */
+  --slot-border: #bfeeff;
+  --slot-bg-1: rgba(16,124,170,0.06);
+  --slot-bg-2: rgba(146,225,255,0.04);
+
+  /* Outside-token base gradients and fallbacks */
+  --outside-token-bg-1: linear-gradient(145deg, #e6fbff 0%, #cfefff 100%);
+  --outside-token-bg-1-flat: #e6fbff; /* fallback */
+  --outside-token-bg-2: #cfefff;
+  --outside-token-border: #9fe6ff;
+  --outside-token-text: #02282a; /* dark glyph for bright tokens */
+
   --outside-slot-inset: 4px;
 
-  --accent: #7cd3ff;
-  --accent-2: #f472b6;
-  --glow: 0 0 0 2px rgba(124,211,255,.55), 0 0 28px rgba(124,211,255,.35);
+  /* Accents and focus/glow (all cool tints) */
+  --accent: #00aee6;        /* bright icy cyan for primary actions */
+  --accent-2: #7fdcff;      /* support accent */
+  --glow: 0 0 0 2px rgba(0,174,230,0.12), 0 0 28px rgba(125,222,255,0.06);
 
-  --frame-shadow: 0 28px 72px rgba(14, 28, 56, .55);
+  --frame-shadow: 0 28px 74px rgba(8,24,36,0.06);
 
-  --menu-bg: #142239;
-  --menu-fg: #e6f0ff;
-  --menu-border: #2a4f8a;
+  /* Path / wave palette: many distinct ice colors for strong visual separation */
+  --path-0: #017809; /* vivid cyan */
+  --path-1: #5fc559; /* bright aqua */
+  --path-2: #078BF2; /* pale aqua */
+  --path-3: #372CE8; /* frosted blue */
+  --path-4: #0099D4; /* near-white ice */
+  --path-5: #1E6E1A; /* minty ice */
+  --path-6: #F5EF0C; /* cool periwinkle */
 
-  --path-0: #7cd3ff;
-  --path-1: #a78bfa;
-  --path-2: #f472b6;
-  --path-3: #60a5fa;
-  --path-4: #22d3ee;
+  /* Border tuning */
+  --border-brightness: 90.06;
+  --border-glow-alpha: 0.62;
 
-  --border-brightness: 1.2;
-  --border-glow-alpha: 0.7;
-
-  /* Distinct per-theme 2nd-wave fill (warm pop on cool board) */
-  --outside-wave1-1: #FFD400; /* amber */
-  --outside-wave1-2: #FF7A00; /* orange */
-  --outside-wave-text: #0c1220;
+  /* Distinct per-theme 2nd-wave fill (for any tokens explicitly marked data-wave="1") */
+  --outside-wave1-1: #F5276C;
+  --outside-wave1-2: #F5276C;
+  --outside-wave-text: #02282a;
 }
+
+/* Use gradient overrides for slot tokens so each data-wave looks clearly icy */
+.slot .token[data-wave="0"] {
+  background: linear-gradient(145deg, #e6fbff 0%, #bff3ff 100%);
+  color: #02282a;
+  border-color: rgba(0,120,160,0.14);
+}
+.slot .token[data-wave="1"] {
+  background: linear-gradient(145deg, #bff6ff 0%, #8fe8ff 100%);
+  color: #02282a;
+  border-color: rgba(12,140,180,0.12);
+}
+.slot .token[data-wave="2"] {
+  background: linear-gradient(145deg, #dffbff 0%, #bfefff 100%);
+  color: #02282a;
+  border-color: rgba(14,156,198,0.10);
+}
+
+
+
 
 /* Forest Canopy */
 [data-theme="forest"] {

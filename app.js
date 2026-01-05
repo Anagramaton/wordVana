@@ -14,13 +14,7 @@ const DEV = false;
 /* Optional base URL for server-hosted daily files (adjust if hosting elsewhere) */
 const DAILY_BASE_URL = '/puzzles/daily';
 
-async function loadPool() {
-  // attempt to load offline pool (kept minimal here; your prior pool logic can be added)
-  // For simplicity we keep the same pool loading approach from original app.js (if you had static JSON pools).
-  // If no pool exists, generate via generator.
-  // This is a thin wrapper that original app.js used — we keep generation in newPuzzle below.
-  return null;
-}
+
 
 function buildDictionary(minLen, maxLen) {
   return WORDS
@@ -31,9 +25,9 @@ function buildDictionary(minLen, maxLen) {
 }
 
 const SIZE_PRESETS = {
-  small:  { N: 8,  maxWordLen: 5,  wordCount: 7  },
-  medium: { N: 11, maxWordLen: 8,  wordCount: 10 },
-  large:  { N: 16, maxWordLen: 11, wordCount: 15 }
+  small:  { N: 8,  maxWordLen: 5,  wordCount: 8  },
+  medium: { N: 11, maxWordLen: 8,  wordCount: 13 },
+  large:  { N: 16, maxWordLen: 11, wordCount: 19 }
 };
 
 let sizeKey = localStorage.getItem('boardSize') || 'large';
